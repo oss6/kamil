@@ -4,16 +4,21 @@
     <meta charset="UTF-8">
     <title>Kamil tests</title>
 
+    <link rel="stylesheet" href="../kamil.css">
     <script src="../kamil.js"></script>
     <script>
-        var countries = [
+        window.onload = function () {
+            var countries = [
                 'Italy',
                 'Morocco',
                 'UK',
                 'Algeria'
-        ];
+            ];
 
-
+            var ac = new Kamil('#countries', {
+                source: countries
+            });
+        };
     </script>
 </head>
 <body>
