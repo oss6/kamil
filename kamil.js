@@ -106,7 +106,8 @@
         disabled: false // Disables the autocomplete if set to true.
     };
 
-    var initSource = function (source) {
+    var initSource = function () {
+        var source = this._opts.source;
 
         if (source.constructor === Array) {
             this._source = source;
@@ -118,7 +119,9 @@
 
     };
 
-    var initList = function (appendTo) {
+    var initList = function () {
+        var appendTo = this._opts.appendTo;
+
         this._list = document.createElement('ul');
         this._list.className = 'kamil-autocomplete';
         if (appendTo !== null) {
@@ -130,31 +133,40 @@
         }
     };
 
+    var inputChange = function (kobj) {
+        return function () {
+            var opts = kobj._opts;
+
+            if (!opts.disabled) {
+                var val = this.value;
+
+                if (!val) {
+                    return;
+                }
+
+                kobj._renderMenu(kobj._source.filter(function (e) {
+                    return e.indexOf(val) !== -1;
+                }));
+            }
+        };
+    };
+
     // Present sorted (default), search beginning of word or just contains
     // callbacks:
     var Kamil = window.Kamil = function (element, options) {
 
+        var self = this;
+
         // Initialise parameters
-        var opts = _.extend(defaults, options),
-            self = this;
-        this._srcElement = typeof element === 'string' ? document.querySelector(element) : element;
+        self._opts = _.extend(defaults, options);
+        self._srcElement = typeof element === 'string' ? document.querySelector(element) : element;
+        self._srcElement.addEventListener('input', inputChange(self));
 
         // Initialise source
-        initSource.call(self, opts.source);
+        initSource.call(self);
 
         // Initialise list
-        initList.call(self, opts.appendTo);
-
-        // Add event listener for input element
-        this._srcElement.addEventListener('keyup', function () {
-            if (!opts.disabled) {
-                var val = this.value;
-
-                self._renderMenu(opts.source.filter(function (e) {
-                    return e.indexOf(val) !== -1;
-                }));
-            }
-        });
+        initList.call(self);
     };
 
     Kamil.prototype._renderMenu = function (items) {
@@ -164,6 +176,11 @@
         while (ls.firstChild) {
             ls.removeChild(ls.firstChild);
         }
+
+        if (ls.style.display !== 'block') {
+            ls.style.display = 'block';
+        }
+        this.resizeMenu(); // Check this
 
         for (var i = 0, l = items.length; i < l; i++) {
             var itemText = items[i];
@@ -177,7 +194,12 @@
     };
 
     Kamil.prototype.close = function () {
-
+        /*if ( this.menu.element.is( ":visible" ) ) {
+            this.menu.element.hide();
+            this.menu.blur();
+            this.isNewMenu = true;
+            this._trigger( "close", event );
+        }*/
     };
 
     Kamil.prototype.disable = function () {
@@ -195,6 +217,10 @@
     // option(name) -> getter
     // option(name, value); -> setter
     Kamil.prototype.option = function () {
+
+    };
+
+    Kamil.prototype.resizeMenu = function () {
 
     };
 
