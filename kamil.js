@@ -191,8 +191,15 @@
         }
     };
 
-    var listItemClickHandler = function (k) {
-        return function (e) {
+    var itemClickFlag;
+
+    var listItemMouseDownHandler = function () {
+        itemClickFlag = false;
+    };
+
+    var listItemMouseUpHandler = function (k) {
+        return function () {
+            itemClickFlag = true;
             k._srcElement.value = this.innerHTML;
             k._srcElement.focus();
             k.close();
@@ -215,8 +222,8 @@
     };
 
     var blurHandler = function (k) {
-        return function (e) {
-            if (k._opts.disabled) {
+        return function () {
+            if (k._opts.disabled || !itemClickFlag) {
                 return;
             }
 
@@ -358,7 +365,8 @@
             // Render item here
             var li = document.createElement('li');
             li.innerHTML = itemText;
-            li.addEventListener('click', listItemClickHandler(this), false);
+            li.addEventListener('mousedown', listItemMouseDownHandler, false);
+            li.addEventListener('mouseup', listItemMouseUpHandler(this), false);
             li.addEventListener('mouseover', overItemHandler(this), false);
             li.addEventListener('mouseout', outItemHandler(this), false);
 
