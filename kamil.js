@@ -110,7 +110,7 @@
         var source = this._opts.source;
 
         if (source.constructor === Array) {
-            this._source = source;
+            this.source = source;
         }
         // String
         else {
@@ -122,33 +122,119 @@
     var initList = function () {
         var appendTo = this._opts.appendTo;
 
-        this._list = document.createElement('ul');
-        this._list.className = 'kamil-autocomplete';
+        this._menu = document.createElement('ul');
+        this._menu.className = 'kamil-autocomplete';
         if (appendTo !== null) {
             var parent = document.querySelector(appendTo);
-            parent.appendChild(this._list);
+            parent.appendChild(this._menu);
         }
         else {
-            this._srcElement.parentNode.insertBefore(this._list, this._srcElement.nextSibling);
+            this._srcElement.parentNode.insertBefore(this._menu, this._srcElement.nextSibling);
         }
     };
 
-    var inputChange = function (kobj) {
-        return function () {
-            var opts = kobj._opts;
+    // TODO: prevent default
+    var upDown = function (k) {
+        return function (e) {
+            var keyCode = e.keyCode;
 
-            if (!opts.disabled) {
-                var val = this.value;
-
-                if (!val) {
-                    return;
-                }
-
-                kobj._renderMenu(kobj._source.filter(function (e) {
-                    return e.indexOf(val) !== -1;
-                }));
+            switch (keyCode) {
+                case 38:
+                    move.call(k, 'previous', e);
+                    e.preventDefault();
+                    return false; // up
+                case 40:
+                    move.call(k, 'next', e);
+                    e.preventDefault();
+                    return false; // down
+                    // TODO: Enter
+                case 27:
+                    k._srcElement.value = k.term;
+                    k.close(e);
+                    break; // esc
             }
+        }
+    };
+
+    var listItemClick = function (k) {
+        return function (e) {
+            k._srcElement.value = this.innerHTML;
+            k._srcElement.focus();
+            k.close(e);
         };
+    };
+
+    var blurHandler = function (k) {
+        return function (e) {
+            if (k._opts.disabled) {
+                return;
+            }
+
+            k.close(e);
+        };
+    };
+
+    var isActive = function (menu, idx) {
+        var items = menu.getElementsByTagName('li'),
+            len = items.length;
+
+        if (typeof idx === 'string') {
+            idx = idx === 'first' ? 0 : len - 1;
+        }
+
+        if (!items[idx]) {
+            return null;
+        }
+
+        return items[idx].classList.contains('kamil-active');
+    };
+
+    var noActive = function (menu) {
+        return menu.getElementsByClassName('kamil-active').length === 0;
+    };
+
+    var move = function (direction, event) {
+        if (this._menu.style.display === 'none') {
+            this.start(null, event);
+            return;
+        }
+
+        var items = this._menu.getElementsByTagName('li');
+
+        if (direction === 'previous' && isActive(this._menu, 'first') ||
+            direction === 'next' && isActive(this._menu, 'last')) {
+            this._srcElement.value = this.term;
+            this._activeIndex = null;
+
+            // Remove active list item
+            for (var i = 0, l = items.length; i < l; i++) {
+                if (items[i].classList.contains('kamil-active')) {
+                    items[i].classList.remove('kamil-active');
+                }
+            }
+            return;
+        }
+
+        var previousIndex = this._activeIndex;
+        if (noActive(this._menu) || this._activeIndex === null) {
+            // From bottom
+            if (direction === 'previous') {
+                this._activeIndex = items.length - 1;
+            }
+            // From top
+            else if (direction === 'next') {
+                this._activeIndex = 0;
+            }
+        }
+        else {
+            this._activeIndex = this._activeIndex + (direction === 'previous' ? -1 : 1);
+        }
+
+        if (previousIndex !== null) {
+            items[previousIndex].classList.remove('kamil-active');
+        }
+        items[this._activeIndex].classList.add('kamil-active');
+        this._srcElement.value = items[this._activeIndex].innerHTML;
     };
 
     // Present sorted (default), search beginning of word or just contains
@@ -159,8 +245,13 @@
 
         // Initialise parameters
         self._opts = _.extend(defaults, options);
-        self._srcElement = typeof element === 'string' ? document.querySelector(element) : element;
-        self._srcElement.addEventListener('input', inputChange(self));
+        var srcElement = self._srcElement = typeof element === 'string' ? document.querySelector(element) : element;
+        srcElement.addEventListener('input', function () { self.start(null) }, false);
+        srcElement.addEventListener('keyup', upDown(self), false);
+        srcElement.addEventListener('blur', blurHandler(self), false); // TODO: menu click triggers blur
+        self.open = false;
+        self.isNewMenu = true; // check
+        self._activeIndex = null;
 
         // Initialise source
         initSource.call(self);
@@ -170,7 +261,7 @@
     };
 
     Kamil.prototype._renderMenu = function (items) {
-        var ls = this._list;
+        var ls = this._menu;
 
         // Clear ul
         while (ls.firstChild) {
@@ -188,30 +279,57 @@
             // Render item here
             var li = document.createElement('li');
             li.innerHTML = itemText;
+            li.addEventListener('click', listItemClick(this), false);
 
             ls.appendChild(li);
         }
     };
 
-    Kamil.prototype.close = function () {
-        /*if ( this.menu.element.is( ":visible" ) ) {
-            this.menu.element.hide();
-            this.menu.blur();
+    // triggers a search
+    Kamil.prototype.start = function (value, event) {
+        value = value !== null ? value : this._srcElement.value;
+        this.term = this._srcElement.value;
+
+        console.log(value);
+
+        if (this._opts.disabled) {
+            return;
+        }
+
+        if (!value) {
+            this.close();
+            return;
+        }
+
+        // Trigger search event
+
+        this._renderMenu(this.source.filter(function (e) {
+            var re = new RegExp(value, 'i');
+            return re.test(e); //e.indexOf(value) !== -1; // Check this
+        }));
+    };
+
+    Kamil.prototype.close = function (event) {
+        if (this._menu.style.display !== 'none') {
+            this._menu.style.display = 'none';
             this.isNewMenu = true;
-            this._trigger( "close", event );
-        }*/
+            // Trigger close (event)
+        }
     };
 
     Kamil.prototype.disable = function () {
-
+        if (this._menu.style.display !== 'none') {
+            this._menu.style.display = 'none';
+        }
+        this._opts.disabled = true;
     };
 
     Kamil.prototype.enable = function () {
-
+        this._opts.disabled = false;
     };
 
     Kamil.prototype.isEnabled = function () {
-
+        return !this._opts.disabled;
     };
 
     // option(name) -> getter
@@ -221,14 +339,9 @@
     };
 
     Kamil.prototype.resizeMenu = function () {
-
+        this._menu.style.width = this._srcElement.offsetWidth + 'px';
+        this._menu.style.left = this._srcElement.offsetLeft + 'px';
+        this._menu.style.top = (this._srcElement.offsetTop + this._srcElement.offsetHeight) + 'px';
     };
-
-    // triggers a search
-    Kamil.prototype.start = function () {
-
-    };
-
-
 
 })(window, document);
