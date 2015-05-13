@@ -74,6 +74,20 @@
         };
     }
 
+    // Which element the menu should be appended to. When the value is null, the parents of the input field will be checked for a class of ui-front.
+    // If an element with the ui-front class is found, the menu will be appended to that element.
+    var defaults = {
+        source: null, // array or string
+        appendTo: null, // Which element the menu should be appended to
+        delay: 300, // The delay in milliseconds between when a keystroke occurs and when a search is performed
+        disabled: false, // Disables the autocomplete if set to true.
+        autoFocus: false
+    };
+
+    var events = function (type) {
+        return new CustomEvent(type);
+    };
+
     // Utils
     var _ = {
         'extend': function (defaults, options) {
@@ -95,15 +109,6 @@
         'css': function (element, o) {
 
         }
-    };
-
-    // Which element the menu should be appended to. When the value is null, the parents of the input field will be checked for a class of ui-front.
-    // If an element with the ui-front class is found, the menu will be appended to that element.
-    var defaults = {
-        source: null, // array or string
-        appendTo: null, // Which element the menu should be appended to
-        delay: 300, // The delay in milliseconds between when a keystroke occurs and when a search is performed
-        disabled: false // Disables the autocomplete if set to true.
     };
 
     var initSource = function () {
@@ -133,20 +138,21 @@
         }
     };
 
-    // TODO: prevent default
     var keyUpHandler = function (k) {
         return function (e) {
+            if (k._opts.disabled) {
+                return;
+            }
+
             var keyCode = e.keyCode;
 
             switch (keyCode) {
                 case 38:
                     move.call(k, 'previous', e);
-                    e.preventDefault();
-                    return false; // up
+                    break; // up
                 case 40:
                     move.call(k, 'next', e);
-                    e.preventDefault();
-                    return false; // down
+                    break; // down
                 case 13:
                     var tmp = k._menu.getElementsByClassName('kamil-active');
 
@@ -156,21 +162,55 @@
 
                     var activeItem = tmp[0];
                     k._srcElement.value = activeItem.innerHTML;
-                    k.close(e);
+                    k.close();
                     break; // enter
                 case 27:
                     k._srcElement.value = k.term;
-                    k.close(e);
+                    k.close();
                     break; // esc
             }
         }
     };
 
-    var listItemClick = function (k) {
+    var inputHandler = function () {
+        var self = this;
+
+        return function (e) {
+            if (self._opts.disabled) {
+                return;
+            }
+
+            clearTimeout(self.searching);
+            self.searching = setTimeout(function() {
+                // Only search if the value has changed
+                if (self.term !== self._srcElement.value) {
+                    self._activeIndex = null;
+                    self.start(null, e);
+                }
+            }, self._opts.delay);
+        }
+    };
+
+    var listItemClickHandler = function (k) {
         return function (e) {
             k._srcElement.value = this.innerHTML;
             k._srcElement.focus();
-            k.close(e);
+            k.close();
+        };
+    };
+
+    var overItemHandler = function (k) {
+        return function () {
+            setActive.call(k, {
+                item: this,
+                fillSource: false
+            });
+        };
+    };
+
+    var outItemHandler = function (k) {
+        return function () {
+            k._menu.getElementsByClassName('kamil-active')[0].classList.remove('kamil-active');
         };
     };
 
@@ -182,7 +222,7 @@
 
             clearTimeout(k.searching);
 
-            k.close(e);
+            k.close();
         };
     };
 
@@ -203,6 +243,28 @@
 
     var noActive = function (menu) {
         return menu.getElementsByClassName('kamil-active').length === 0;
+    };
+
+    var setActive = function (o) {
+        // Search for active item
+        var activeArr = this._menu.getElementsByClassName('kamil-active');
+
+        if (activeArr.length !== 0) {
+            activeArr[0].classList.remove('kamil-active');
+        }
+
+        o.item.classList.add('kamil-active');
+
+        if (o.fillSource) {
+            this._srcElement.value = o.item.innerHTML;
+        }
+
+        var focus = new CustomEvent('kamilfocus', {
+            detail: {
+                item: o.item
+            }
+        });
+        this._menu.dispatchEvent(focus);
     };
 
     var move = function (direction, event) {
@@ -242,11 +304,10 @@
             this._activeIndex = this._activeIndex + (direction === 'previous' ? -1 : 1);
         }
 
-        if (previousIndex !== null) {
-            items[previousIndex].classList.remove('kamil-active');
-        }
-        items[this._activeIndex].classList.add('kamil-active');
-        this._srcElement.value = items[this._activeIndex].innerHTML;
+        setActive.call(this, {
+            item: items[this._activeIndex],
+            fillSource: true
+        });
     };
 
     // Present sorted (default), search beginning of word or just contains
@@ -258,17 +319,14 @@
         // Initialise parameters
         self._opts = _.extend(defaults, options);
         var srcElement = self._srcElement = typeof element === 'string' ? document.querySelector(element) : element;
-        srcElement.addEventListener('input', function (e) {
-            clearTimeout(self.searching);
-            self.searching = setTimeout(function() {
-                // Only search if the value has changed
-                if (self.term !== self._srcElement.value) {
-                    self._activeIndex = null;
-                    self.start(null, e);
-                }
-            }, self._opts.delay);
-        }, false);
+        srcElement.addEventListener('input', inputHandler.call(self), false);
         srcElement.addEventListener('keyup', keyUpHandler(self), false);
+        srcElement.addEventListener('keydown', function(e) {
+            if(e.keyCode === 38 || e.keyCode === 40) {
+                e.preventDefault();
+                return false;
+            }
+        }, false);
         srcElement.addEventListener('blur', blurHandler(self), false); // TODO: menu click triggers blur
         self.open = false;
         self.isNewMenu = true; // check
@@ -281,7 +339,7 @@
         initList.call(self);
     };
 
-    Kamil.prototype._renderMenu = function (items) {
+    Kamil.prototype._renderMenu = function (items, callback) {
         var ls = this._menu;
 
         // Clear ul
@@ -292,7 +350,7 @@
         if (ls.style.display !== 'block') {
             ls.style.display = 'block';
         }
-        this.resizeMenu(); // Check this
+        this._resizeMenu(); // Check this
 
         for (var i = 0, l = items.length; i < l; i++) {
             var itemText = items[i];
@@ -300,47 +358,84 @@
             // Render item here
             var li = document.createElement('li');
             li.innerHTML = itemText;
-            li.addEventListener('click', listItemClick(this), false);
+            li.addEventListener('click', listItemClickHandler(this), false);
+            li.addEventListener('mouseover', overItemHandler(this), false);
+            li.addEventListener('mouseout', outItemHandler(this), false);
 
             ls.appendChild(li);
         }
+
+        callback();
+    };
+
+    Kamil.prototype._resizeMenu = function () {
+        this._menu.style.width = this._srcElement.offsetWidth + 'px';
+        this._menu.style.left = this._srcElement.offsetLeft + 'px';
+        this._menu.style.top = (this._srcElement.offsetTop + this._srcElement.offsetHeight) + 'px';
     };
 
     // triggers a search
-    Kamil.prototype.start = function (value, event) {
-        value = value !== null ? value : this._srcElement.value;
-        this.term = this._srcElement.value;
+    Kamil.prototype.start = function (value) {
+        var self = this;
 
-        if (this._opts.disabled) {
+        value = value !== null ? value : this._srcElement.value;
+        self.term = self._srcElement.value;
+
+        if (self._opts.disabled) {
             return;
         }
 
         if (!value) {
-            this.close();
+            self.close();
             return;
         }
 
         // Trigger search event
-        var data = this.source.filter(function (e) {
+        var data = self.source.filter(function (e) {
             var re = new RegExp(value, 'i');
             return re.test(e); //e.indexOf(value) !== -1; // Check this
         });
 
         // TODO: check this
-        if (data.length === 0) {
+        /*if (data.length === 0) {
             return;
-        }
+        }*/
 
-        this.open = true;
-        this._renderMenu(data);
+        self.open = true;
+        self._renderMenu(data, function () {
+            if (self._opts.autoFocus) {
+                var items = self._menu.getElementsByTagName('li');
+
+                setActive.call(self, {
+                    item: items[0],
+                    fillSource: false
+                });
+            }
+
+            self._menu.dispatchEvent(events('kamilopen'));
+        });
     };
 
-    Kamil.prototype.close = function (event) {
+    Kamil.prototype.destroy = function () {
+        // Remove menu
+        this._menu.remove();
+
+        // Remove event listeners
+        var srcElement = this._srcElement;
+        srcElement.removeEventListener('input', inputHandler.call(this), false);
+        srcElement.removeEventListener('keyup', keyUpHandler(this), false);
+        // keyDown
+        srcElement.removeEventListener('blur', blurHandler(self), false);
+    };
+
+    Kamil.prototype.close = function () {
         if (this._menu.style.display !== 'none') {
             this._menu.style.display = 'none';
             this.open = false;
             this.isNewMenu = true;
-            // Trigger close (event)
+
+            // Trigger event
+            this._menu.dispatchEvent(events('kamilclose'));
         }
     };
 
@@ -359,16 +454,25 @@
         return !this._opts.disabled;
     };
 
-    // option(name) -> getter
-    // option(name, value); -> setter
     Kamil.prototype.option = function () {
+        switch (arguments.length) {
+            case 0:
+                return this._opts;
+                break;
 
+            case 1:
+                return this._opts[arguments[0]];
+                break;
+
+            case 2:
+                this._opts[arguments[0]] = arguments[1];
+                break;
+        }
     };
 
-    Kamil.prototype.resizeMenu = function () {
-        this._menu.style.width = this._srcElement.offsetWidth + 'px';
-        this._menu.style.left = this._srcElement.offsetLeft + 'px';
-        this._menu.style.top = (this._srcElement.offsetTop + this._srcElement.offsetHeight) + 'px';
+    // fn --> event, obj
+    Kamil.prototype.on = function (eventName, fn) {
+        this._menu.addEventListener(eventName, fn, false);
     };
 
 })(window, document);
