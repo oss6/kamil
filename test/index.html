@@ -8,16 +8,36 @@
     <script src="../kamil.js"></script>
     <script>
         window.onload = function () {
-            var countries = [
-                'Italy',
-                'Morocco',
-                'UK',
-                'Algeria'
+            var tags = [
+                "ActionScript",
+                "AppleScript",
+                "Asp",
+                "BASIC",
+                "C",
+                "C++",
+                "Clojure",
+                "COBOL",
+                "ColdFusion",
+                "Erlang",
+                "Fortran",
+                "Groovy",
+                "Haskell",
+                "Java",
+                "JavaScript",
+                "Lisp",
+                "Perl",
+                "PHP",
+                "Python",
+                "Ruby",
+                "Scala",
+                "Scheme"
             ];
 
-            var ac = new Kamil('#countries', {
-                source: countries
+            var ac = new Kamil('#tags', {
+                source: tags
             });
+
+            console.log(ac);
         };
     </script>
 </head>
@@ -25,8 +45,8 @@
     <h1>Kamil tests</h1>
 
     <div>
-        <label for="countries">Countries: </label>
-        <input id="countries">
+        <label for="tags">Tags: </label>
+        <input id="tags">
     </div>
 </body>
 </html>

@@ -134,7 +134,7 @@
     };
 
     // TODO: prevent default
-    var upDown = function (k) {
+    var keyUpHandler = function (k) {
         return function (e) {
             var keyCode = e.keyCode;
 
@@ -147,7 +147,17 @@
                     move.call(k, 'next', e);
                     e.preventDefault();
                     return false; // down
-                    // TODO: Enter
+                case 13:
+                    var tmp = k._menu.getElementsByClassName('kamil-active');
+
+                    if (tmp.length === 0) {
+                        return;
+                    }
+
+                    var activeItem = tmp[0];
+                    k._srcElement.value = activeItem.innerHTML;
+                    k.close(e);
+                    break; // enter
                 case 27:
                     k._srcElement.value = k.term;
                     k.close(e);
@@ -169,6 +179,8 @@
             if (k._opts.disabled) {
                 return;
             }
+
+            clearTimeout(k.searching);
 
             k.close(e);
         };
@@ -246,8 +258,17 @@
         // Initialise parameters
         self._opts = _.extend(defaults, options);
         var srcElement = self._srcElement = typeof element === 'string' ? document.querySelector(element) : element;
-        srcElement.addEventListener('input', function () { self.start(null) }, false);
-        srcElement.addEventListener('keyup', upDown(self), false);
+        srcElement.addEventListener('input', function (e) {
+            clearTimeout(self.searching);
+            self.searching = setTimeout(function() {
+                // Only search if the value has changed
+                if (self.term !== self._srcElement.value) {
+                    self._activeIndex = null;
+                    self.start(null, e);
+                }
+            }, self._opts.delay);
+        }, false);
+        srcElement.addEventListener('keyup', keyUpHandler(self), false);
         srcElement.addEventListener('blur', blurHandler(self), false); // TODO: menu click triggers blur
         self.open = false;
         self.isNewMenu = true; // check
@@ -290,8 +311,6 @@
         value = value !== null ? value : this._srcElement.value;
         this.term = this._srcElement.value;
 
-        console.log(value);
-
         if (this._opts.disabled) {
             return;
         }
@@ -302,16 +321,24 @@
         }
 
         // Trigger search event
-
-        this._renderMenu(this.source.filter(function (e) {
+        var data = this.source.filter(function (e) {
             var re = new RegExp(value, 'i');
             return re.test(e); //e.indexOf(value) !== -1; // Check this
-        }));
+        });
+
+        // TODO: check this
+        if (data.length === 0) {
+            return;
+        }
+
+        this.open = true;
+        this._renderMenu(data);
     };
 
     Kamil.prototype.close = function (event) {
         if (this._menu.style.display !== 'none') {
             this._menu.style.display = 'none';
+            this.open = false;
             this.isNewMenu = true;
             // Trigger close (event)
         }
