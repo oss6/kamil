@@ -7,10 +7,9 @@
  */
 
 // TODO:
-// - custom renderItem and renderMenu
 // - categories
 // - tag functionality
-// -
+// - select event
 
 (function (window, document, undefined) {
 
@@ -20,10 +19,18 @@
         source: null, // array or string
         appendTo: null, // Which element the menu should be appended to
         delay: 300, // The delay in milliseconds between when a keystroke occurs and when a search is performed
+        minChars: 1,
         disabled: false, // Disables the autocomplete if set to true.
         autoFocus: false,
-        matchFirst: false,
-        valueProp: null
+        valueProp: null,
+        filter: function (text, input) {
+            var re = new RegExp(input, 'i');
+            return re.test(text);
+        },
+
+        sort: function (a, b) {
+            return a.length - b.length
+        }
     };
 
     var events = function (type) {
@@ -46,10 +53,6 @@
                 }
             }
             return extended;
-        },
-
-        'css': function (element, o) {
-
         }
     };
 
@@ -129,10 +132,17 @@
                 return;
             }
 
+            if (self._srcElement.value.length < self._opts.minChars) {
+                self.close();
+                return;
+            }
+
             clearTimeout(self.searching);
             self.searching = setTimeout(function() {
+                console.log(self.term);
+                console.log(self._srcElement.value);
                 // Only search if the value has changed
-                if (self.term !== self._srcElement.value) {
+                if (self.term !== self._srcElement.value || !self.open) {
                     self._activeIndex = null;
                     self.start(null, e);
                 }
@@ -245,7 +255,6 @@
             return;
         }
 
-        //var previousIndex = this._activeIndex;
         if (noActive(this._menu) || this._activeIndex === null) {
             // From bottom
             if (direction === 'previous') {
@@ -266,8 +275,6 @@
         });
     };
 
-    // Present sorted (default), search beginning of word or just contains
-    // callbacks:
     var Kamil = window.Kamil = function (element, options) {
 
         var self = this;
@@ -296,7 +303,6 @@
         this._menu.style.width = this._srcElement.offsetWidth + 'px';
         this._menu.style.left = this._srcElement.offsetLeft + 'px';
         this._menu.style.top = (this._srcElement.offsetTop + this._srcElement.offsetHeight) + 'px';
-        console.log(this._menu.style.zIndex);
         //this._srcElement.style.zIndex = this._menu
     };
 
@@ -360,10 +366,10 @@
         }
 
         // Trigger search event
-        self._data = self.source.filter(function (e) { // var data
-            var re = new RegExp(self._opts.matchFirst ? '^' + value : value, 'i');
-            return re.test(self._opts.valueProp === null ? (e.label || e.value || e) : e[self._opts.valueProp]);
+        self._data = self.source.filter(function (e) {
+            return self._opts.filter(self._opts.valueProp === null ? (e.label || e.value || e) : e[self._opts.valueProp], value);
         });
+        self._data.sort(self._opts.sort);
 
         // TODO: check this
         /*if (data.length === 0) {
@@ -372,12 +378,12 @@
 
         var kamilResponse = new CustomEvent('kamilresponse', {
             detail: {
-                content: self._data // data
+                content: self._data
             }
         });
         this._menu.dispatchEvent(kamilResponse);
 
-        self._renderMenu(self._data, function () { // data
+        self._renderMenu(self._data, function () {
             if (self._opts.autoFocus) {
                 var items = self._menu.getElementsByTagName('li');
 
@@ -405,7 +411,7 @@
     };
 
     Kamil.prototype.close = function () {
-        if (this.open) { // this._menu.style.display !== 'none'
+        if (this.open) {
             this._menu.style.display = 'none';
             this.open = false;
 
