@@ -1,0 +1,14 @@
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #eee;
+}
+
+input {
+    background-color: #fafafa;
+    outline: none;
+    border: none;
+    font-size: 18px;
+    color: #707070;
+    box-shadow: 0 0 2px 0 rgba(0, 0, 0, 0.16), 0 1px 2px 0 rgba(0, 0, 0, 0.12);
+    padding: 14px 16px;
+}

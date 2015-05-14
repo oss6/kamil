@@ -6,73 +6,13 @@
  * by Ossama Edbali
  */
 
-// addEventListener polyfill 1.0 / Eirik Backer / MIT Licence
-(function(win, doc){
-    if(win.addEventListener)return;		//No need to polyfill
-
-    function docHijack(p){var old = doc[p];doc[p] = function(v){return addListen(old(v))}}
-    function addEvent(on, fn, self){
-        return (self = this).attachEvent('on' + on, function(e){
-            var e = e || win.event;
-            e.preventDefault  = e.preventDefault  || function(){e.returnValue = false}
-            e.stopPropagation = e.stopPropagation || function(){e.cancelBubble = true}
-            fn.call(self, e);
-        });
-    }
-    function addListen(obj, i){
-        if(i = obj.length)while(i--)obj[i].addEventListener = addEvent;
-        else obj.addEventListener = addEvent;
-        return obj;
-    }
-
-    addListen([doc, win]);
-    if('Element' in win)win.Element.prototype.addEventListener = addEvent;			//IE8
-    else{																			//IE < 8
-        doc.attachEvent('onreadystatechange', function(){addListen(doc.all)});		//Make sure we also init at domReady
-        docHijack('getElementsByTagName');
-        docHijack('getElementById');
-        docHijack('createElement');
-        addListen(doc.all);
-    }
-})(window, document);
+// TODO:
+// - custom renderItem and renderMenu
+// - categories
+// - tag functionality
+// -
 
 (function (window, document, undefined) {
-
-    // Filter polyfill
-    if (!Array.prototype.filter) {
-        Array.prototype.filter = function(fun/*, thisArg*/) {
-            'use strict';
-
-            if (this === void 0 || this === null) {
-                throw new TypeError();
-            }
-
-            var t = Object(this);
-            var len = t.length >>> 0;
-            if (typeof fun !== 'function') {
-                throw new TypeError();
-            }
-
-            var res = [];
-            var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
-            for (var i = 0; i < len; i++) {
-                if (i in t) {
-                    var val = t[i];
-
-                    // NOTE: Technically this should Object.defineProperty at
-                    //       the next index, as push can be affected by
-                    //       properties on Object.prototype and Array.prototype.
-                    //       But that method's new, and collisions should be
-                    //       rare, so use the more-compatible alternative.
-                    if (fun.call(thisArg, val, i, t)) {
-                        res.push(val);
-                    }
-                }
-            }
-
-            return res;
-        };
-    }
 
     // Which element the menu should be appended to. When the value is null, the parents of the input field will be checked for a class of ui-front.
     // If an element with the ui-front class is found, the menu will be appended to that element.
@@ -82,7 +22,8 @@
         delay: 300, // The delay in milliseconds between when a keystroke occurs and when a search is performed
         disabled: false, // Disables the autocomplete if set to true.
         autoFocus: false,
-        matchFirst: false
+        matchFirst: false,
+        valueProp: null
     };
 
     var events = function (type) {
@@ -162,7 +103,7 @@
                     }
 
                     var activeItem = tmp[0];
-                    k._srcElement.value = activeItem.innerHTML;
+                    k._srcElement.value = activeItem.textContent || activeItem.innerText;
                     k.close();
                     break; // enter
                 case 27:
@@ -208,7 +149,7 @@
     var listItemMouseUpHandler = function (k) {
         return function () {
             itemClickFlag = true;
-            k._srcElement.value = this.innerHTML;
+            k._srcElement.value = this.textContent || this.innerText;
             k._srcElement.focus();
             k.close();
         };
@@ -271,19 +212,19 @@
         o.item.classList.add('kamil-active');
 
         if (o.fillSource) {
-            this._srcElement.value = o.item.innerHTML;
+            this._srcElement.value = o.item.textContent || o.item.innerText;
         }
 
         var focus = new CustomEvent('kamilfocus', {
             detail: {
-                item: o.item
+                item: this._data // TODO: pass item object (not array)
             }
         });
         this._menu.dispatchEvent(focus);
     };
 
     var move = function (direction, event) {
-        if (this._menu.style.display === 'none') {
+        if (!this.open) { // this._menu.style.display === 'none'
             this.start(null, event);
             return;
         }
@@ -304,7 +245,7 @@
             return;
         }
 
-        var previousIndex = this._activeIndex;
+        //var previousIndex = this._activeIndex;
         if (noActive(this._menu) || this._activeIndex === null) {
             // From bottom
             if (direction === 'previous') {
@@ -333,20 +274,38 @@
 
         // Initialise parameters
         self._opts = _.extend(defaults, options);
+        self._activeIndex = null;
+        self._data = null;
+        self.open = false;
+
+        // Initialise input element
         var srcElement = self._srcElement = typeof element === 'string' ? document.querySelector(element) : element;
         srcElement.addEventListener('input', inputHandler.call(self), false);
         srcElement.addEventListener('keyup', keyUpHandler(self), false);
         srcElement.addEventListener('keydown', keyDownHandler, false);
         srcElement.addEventListener('blur', blurHandler(self), false);
-        self.open = false;
-        self.isNewMenu = true; // check
-        self._activeIndex = null;
 
         // Initialise source
         initSource.call(self);
 
         // Initialise list
         initList.call(self);
+    };
+
+    Kamil.prototype._resizeMenu = function () {
+        this._menu.style.width = this._srcElement.offsetWidth + 'px';
+        this._menu.style.left = this._srcElement.offsetLeft + 'px';
+        this._menu.style.top = (this._srcElement.offsetTop + this._srcElement.offsetHeight) + 'px';
+        console.log(this._menu.style.zIndex);
+        //this._srcElement.style.zIndex = this._menu
+    };
+
+    Kamil.prototype._renderItemData = function (ul, item) {
+        var li = this.renderItem(ul, item);
+        li.addEventListener('mousedown', listItemMouseDownHandler, false);
+        li.addEventListener('mouseup', listItemMouseUpHandler(this), false);
+        li.addEventListener('mouseover', overItemHandler(this), false);
+        li.addEventListener('mouseout', outItemHandler(this), false);
     };
 
     Kamil.prototype._renderMenu = function (items, callback) {
@@ -357,32 +316,31 @@
             ls.removeChild(ls.firstChild);
         }
 
+        this._resizeMenu(); // Check this
+        this.renderMenu(ls, items);
+
         if (ls.style.display !== 'block') {
             ls.style.display = 'block';
-        }
-        this._resizeMenu(); // Check this
-
-        for (var i = 0, l = items.length; i < l; i++) {
-            var itemText = items[i];
-
-            // Render item here
-            var li = document.createElement('li');
-            li.innerHTML = itemText;
-            li.addEventListener('mousedown', listItemMouseDownHandler, false);
-            li.addEventListener('mouseup', listItemMouseUpHandler(this), false);
-            li.addEventListener('mouseover', overItemHandler(this), false);
-            li.addEventListener('mouseout', outItemHandler(this), false);
-
-            ls.appendChild(li);
         }
 
         callback();
     };
 
-    Kamil.prototype._resizeMenu = function () {
-        this._menu.style.width = this._srcElement.offsetWidth + 'px';
-        this._menu.style.left = this._srcElement.offsetLeft + 'px';
-        this._menu.style.top = (this._srcElement.offsetTop + this._srcElement.offsetHeight) + 'px';
+    Kamil.prototype.renderItem = function (ul, item) {
+        var li = document.createElement('li');
+        li.innerHTML = item;
+        ul.appendChild(li);
+
+        return li;
+    };
+
+    Kamil.prototype.renderMenu = function (ul, items) {
+
+        for (var i = 0, l = items.length; i < l; i++) {
+            var item = items[i];
+            this._renderItemData(ul, item);
+        }
+
     };
 
     // triggers a search
@@ -403,8 +361,8 @@
 
         // Trigger search event
         self._data = self.source.filter(function (e) { // var data
-            var re = new RegExp(value, 'i');
-            return re.test(e);
+            var re = new RegExp(self._opts.matchFirst ? '^' + value : value, 'i');
+            return re.test(self._opts.valueProp === null ? (e.label || e.value || e) : e[self._opts.valueProp]);
         });
 
         // TODO: check this
@@ -414,13 +372,12 @@
 
         var kamilResponse = new CustomEvent('kamilresponse', {
             detail: {
-                content: self._data
+                content: self._data // data
             }
         });
         this._menu.dispatchEvent(kamilResponse);
 
-        self.open = true;
-        self._renderMenu(self._data, function () {
+        self._renderMenu(self._data, function () { // data
             if (self._opts.autoFocus) {
                 var items = self._menu.getElementsByTagName('li');
 
@@ -430,6 +387,7 @@
                 });
             }
 
+            self.open = true;
             self._menu.dispatchEvent(events('kamilopen'));
         });
     };
@@ -447,10 +405,9 @@
     };
 
     Kamil.prototype.close = function () {
-        if (this._menu.style.display !== 'none') {
+        if (this.open) { // this._menu.style.display !== 'none'
             this._menu.style.display = 'none';
             this.open = false;
-            this.isNewMenu = true;
 
             // Trigger event
             this._menu.dispatchEvent(events('kamilclose'));
@@ -458,9 +415,7 @@
     };
 
     Kamil.prototype.disable = function () {
-        if (this._menu.style.display !== 'none') {
-            this._menu.style.display = 'none';
-        }
+        this.close();
         this._opts.disabled = true;
     };
 

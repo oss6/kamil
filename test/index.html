@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <title>Kamil tests</title>
 
+    <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="../kamil.css">
     <script src="../kamil.js"></script>
     <script>
@@ -32,20 +34,44 @@
                 "Scala",
                 "Scheme"
             ];
+            /*var tags = [
+                {
+                    label: "jQuery",
+                    desc: "the write less, do more, JavaScript library"
+                },
+                {
+                    label: "jQuery UI",
+                    desc: "the official user interface library for jQuery"
+                },
+                {
+                    label: "Sizzle JS",
+                    desc: "a pure-JavaScript CSS selector engine"
+                }
+            ];*/
 
             var autoComplete = new Kamil('#tags', {
                 source: tags
             });
 
+            /*autoComplete.renderItem = function (ul, item) {
+                var li = document.createElement('li');
+                li.innerHTML = "<a>" + item.label + "<br>" + item.desc + "</a>";
+                ul.appendChild(li);
+
+                return li;
+            };
+
+            autoComplete.on('kamilfocus', function (e) {
+                console.log(e.detail.item);
+                //autoComplete._srcElement.value = e.detail.item.label;
+                return false;
+            });*/
         };
     </script>
 </head>
 <body>
     <h1>Kamil tests</h1>
 
-    <div>
-        <label for="tags">Tags: </label>
-        <input id="tags">
-    </div>
+    <input id="tags" placeholder="Search">
 </body>
 </html>
