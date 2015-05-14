@@ -81,7 +81,8 @@
         appendTo: null, // Which element the menu should be appended to
         delay: 300, // The delay in milliseconds between when a keystroke occurs and when a search is performed
         disabled: false, // Disables the autocomplete if set to true.
-        autoFocus: false
+        autoFocus: false,
+        matchFirst: false
     };
 
     var events = function (type) {
@@ -172,6 +173,13 @@
         }
     };
 
+    var keyDownHandler = function (e) {
+        if(e.keyCode === 38 || e.keyCode === 40) {
+            e.preventDefault();
+            return false;
+        }
+    };
+
     var inputHandler = function () {
         var self = this;
 
@@ -191,7 +199,7 @@
         }
     };
 
-    var itemClickFlag;
+    var itemClickFlag = true;
 
     var listItemMouseDownHandler = function () {
         itemClickFlag = false;
@@ -328,13 +336,8 @@
         var srcElement = self._srcElement = typeof element === 'string' ? document.querySelector(element) : element;
         srcElement.addEventListener('input', inputHandler.call(self), false);
         srcElement.addEventListener('keyup', keyUpHandler(self), false);
-        srcElement.addEventListener('keydown', function(e) {
-            if(e.keyCode === 38 || e.keyCode === 40) {
-                e.preventDefault();
-                return false;
-            }
-        }, false);
-        srcElement.addEventListener('blur', blurHandler(self), false); // TODO: menu click triggers blur
+        srcElement.addEventListener('keydown', keyDownHandler, false);
+        srcElement.addEventListener('blur', blurHandler(self), false);
         self.open = false;
         self.isNewMenu = true; // check
         self._activeIndex = null;
@@ -399,9 +402,9 @@
         }
 
         // Trigger search event
-        var data = self.source.filter(function (e) {
+        self._data = self.source.filter(function (e) { // var data
             var re = new RegExp(value, 'i');
-            return re.test(e); //e.indexOf(value) !== -1; // Check this
+            return re.test(e);
         });
 
         // TODO: check this
@@ -409,8 +412,15 @@
             return;
         }*/
 
+        var kamilResponse = new CustomEvent('kamilresponse', {
+            detail: {
+                content: self._data
+            }
+        });
+        this._menu.dispatchEvent(kamilResponse);
+
         self.open = true;
-        self._renderMenu(data, function () {
+        self._renderMenu(self._data, function () {
             if (self._opts.autoFocus) {
                 var items = self._menu.getElementsByTagName('li');
 
@@ -432,7 +442,7 @@
         var srcElement = this._srcElement;
         srcElement.removeEventListener('input', inputHandler.call(this), false);
         srcElement.removeEventListener('keyup', keyUpHandler(this), false);
-        // keyDown
+        srcElement.removeEventListener('keydown', keyDownHandler, false);
         srcElement.removeEventListener('blur', blurHandler(self), false);
     };
 
