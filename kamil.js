@@ -6,39 +6,30 @@
  * by Ossama Edbali
  */
 
-// TODO:
-// - categories
-// - tag functionality
-// - select event
+(function (window, document) {
 
-(function (window, document, undefined) {
+    // TODO:
+    // - kamilselect overrides default input element value
 
-    // Which element the menu should be appended to. When the value is null, the parents of the input field will be checked for a class of ui-front.
-    // If an element with the ui-front class is found, the menu will be appended to that element.
     var defaults = {
-        source: null, // array or string
-        appendTo: null, // Which element the menu should be appended to
-        delay: 300, // The delay in milliseconds between when a keystroke occurs and when a search is performed
-        minChars: 1,
-        disabled: false, // Disables the autocomplete if set to true.
+        source: null,
+        appendTo: null,
+        disabled: false,
         autoFocus: false,
-        valueProp: null,
+        minChars: 2,
+        property: null,
         filter: function (text, input) {
             var re = new RegExp(input, 'i');
             return re.test(text);
         },
-
         sort: function (a, b) {
             return a.length - b.length
         }
     };
 
-    var events = function (type) {
-        return new CustomEvent(type);
-    };
+    // Helpers
 
-    // Utils
-    var _ = {
+    var $ = {
         'extend': function (defaults, options) {
             var extended = {};
             var prop;
@@ -53,265 +44,303 @@
                 }
             }
             return extended;
-        }
-    };
+        },
 
-    var initSource = function () {
-        var source = this._opts.source;
+        'getItemValue': function (kamil, listItem) {
+            var item = kamil._data[parseInt(listItem.getAttribute('data-position'))],
+                prop = kamil._opts.property;
 
-        if (source.constructor === Array) {
-            this.source = source;
-        }
-        // String
-        else {
+            return prop === null ? (item['label'] || item['value'] || item) : item[prop];
+        },
 
-        }
+        'trigger': function (target, type, properties) {
+            var evt = document.createEvent("HTMLEvents");
 
-    };
+            evt.initEvent(type, true, true );
 
-    var initList = function () {
-        var appendTo = this._opts.appendTo;
+            for (var j in properties) {
+                evt[j] = properties[j];
+            }
 
-        this._menu = document.createElement('ul');
-        this._menu.className = 'kamil-autocomplete';
-        if (appendTo !== null) {
-            var parent = document.querySelector(appendTo);
-            parent.appendChild(this._menu);
-        }
-        else {
-            this._srcElement.parentNode.insertBefore(this._menu, this._srcElement.nextSibling);
-        }
-    };
+            target.dispatchEvent(evt);
+        },
 
-    var keyUpHandler = function (k) {
-        return function (e) {
-            if (k._opts.disabled) {
+        'isActive': function (menu, idx) {
+            var items = menu.getElementsByTagName('li'),
+                len = items.length;
+
+            if (typeof idx === 'string') {
+                idx = idx === 'first' ? 0 : len - 1;
+            }
+
+            if (!items[idx]) {
+                return null;
+            }
+
+            return items[idx].classList.contains('kamil-active');
+        },
+
+        'noActive': function (menu) {
+            return menu.getElementsByClassName('kamil-active').length === 0;
+        },
+
+        'setActive': function (o) {
+            // Search for active item
+            var activeArr = this._menu.getElementsByClassName('kamil-active');
+
+            if (activeArr.length !== 0) {
+                activeArr[0].classList.remove('kamil-active');
+            }
+
+            o.item.classList.add('kamil-active');
+
+            if (o.fillSource) {
+                this._srcElement.value = $.getItemValue(this, o.item); // o.item.textContent || o.item.innerText;
+            }
+
+            $.trigger(this._menu, 'kamilfocus', {
+                item: this._data[parseInt(o.item.getAttribute('data-position'))],
+                inputElement: this._srcElement
+            });
+        },
+
+        move: function (direction, event) {
+            if (!this.open) { // this._menu.style.display === 'none'
+                this.start(null, event);
                 return;
             }
 
-            var keyCode = e.keyCode;
+            var items = this._menu.getElementsByTagName('li');
 
-            switch (keyCode) {
-                case 38:
-                    move.call(k, 'previous', e);
-                    break; // up
-                case 40:
-                    move.call(k, 'next', e);
-                    break; // down
-                case 13:
-                    var tmp = k._menu.getElementsByClassName('kamil-active');
+            if (direction === 'previous' && $.isActive(this._menu, 'first') ||
+                direction === 'next' && $.isActive(this._menu, 'last')) {
+                this._srcElement.value = this.term;
+                this._activeIndex = null;
 
-                    if (tmp.length === 0) {
-                        return;
+                // Remove active list item
+                for (var i = 0, l = items.length; i < l; i++) {
+                    if (items[i].classList.contains('kamil-active')) {
+                        items[i].classList.remove('kamil-active');
                     }
+                }
+                return;
+            }
 
-                    var activeItem = tmp[0];
-                    k._srcElement.value = activeItem.textContent || activeItem.innerText;
-                    k.close();
-                    break; // enter
-                case 27:
-                    k._srcElement.value = k.term;
-                    k.close();
-                    break; // esc
+            if ($.noActive(this._menu) || this._activeIndex === null) {
+                // From bottom
+                if (direction === 'previous') {
+                    this._activeIndex = items.length - 1;
+                }
+                // From top
+                else if (direction === 'next') {
+                    this._activeIndex = 0;
+                }
+            }
+            else {
+                this._activeIndex = this._activeIndex + (direction === 'previous' ? -1 : 1);
+            }
+
+            $.setActive.call(this, {
+                item: items[this._activeIndex],
+                fillSource: true
+            });
+        }
+    };
+
+    // Initialisation
+
+    var init = {
+        'source': function () {
+            var source = this._opts.source;
+
+            // Array
+            if (source.constructor === Array) {
+                this.source = source;
+            }
+            // String
+            else {
+                var list = document.querySelector(source),
+                    childNodes = list.childNodes;
+
+                this.source = [];
+                for (var i = 0, l = childNodes.length; i < l; i++) {
+                    var item = childNodes[i];
+                    this.source.push(item.textContent);
+                }
+            }
+        },
+
+        'list': function () {
+            var appendTo = this._opts.appendTo;
+
+            this._menu = document.createElement('ul');
+            this._menu.className = 'kamil-autocomplete';
+            if (appendTo !== null) {
+                var parent = document.querySelector(appendTo);
+                parent.appendChild(this._menu);
+            }
+            else {
+                this._srcElement.parentNode.insertBefore(this._menu, this._srcElement.nextSibling);
             }
         }
     };
 
-    var keyDownHandler = function (e) {
-        if(e.keyCode === 38 || e.keyCode === 40) {
-            e.preventDefault();
-            return false;
-        }
-    };
+    // Handlers
 
-    var inputHandler = function () {
-        var self = this;
+    var handlers = {
+        'keyup': function (k) {
+            return function (e) {
+                if (k._opts.disabled) {
+                    return;
+                }
 
-        return function (e) {
-            if (self._opts.disabled) {
-                return;
+                var keyCode = e.keyCode;
+
+                switch (keyCode) {
+                    case 38:
+                        $.move.call(k, 'previous', e);
+                        break; // up
+                    case 40:
+                        $.move.call(k, 'next', e);
+                        break; // down
+                    case 13:
+                        var tmp = k._menu.getElementsByClassName('kamil-active');
+
+                        if (tmp.length === 0) {
+                            return;
+                        }
+
+                        var activeItem = tmp[0];
+                        k._srcElement.value = $.getItemValue(k, activeItem); // activeItem.textContent || activeItem.innerText;
+
+                        // Trigger select event and override previous input value
+                        $.trigger(k._menu, 'kamilselect', {
+                            item: k._data[parseInt(activeItem.getAttribute('data-position'))],
+                            inputElement: k._srcElement
+                        });
+
+                        k.close();
+                        break; // enter
+                    case 27:
+                        k._srcElement.value = k.term;
+                        k.close();
+                        break; // esc
+                }
             }
+        },
 
-            if (self._srcElement.value.length < self._opts.minChars) {
-                self.close();
-                return;
+        'keydown': function (e) {
+            if(e.keyCode === 38 || e.keyCode === 40) {
+                e.preventDefault();
+                return false;
             }
+        },
 
-            clearTimeout(self.searching);
-            self.searching = setTimeout(function() {
-                console.log(self.term);
-                console.log(self._srcElement.value);
+        'input': function () {
+            var self = this;
+
+            return function () {
+                if (self._opts.disabled) {
+                    return;
+                }
+
                 // Only search if the value has changed
                 if (self.term !== self._srcElement.value || !self.open) {
                     self._activeIndex = null;
-                    self.start(null, e);
-                }
-            }, self._opts.delay);
-        }
-    };
-
-    var itemClickFlag = true;
-
-    var listItemMouseDownHandler = function () {
-        itemClickFlag = false;
-    };
-
-    var listItemMouseUpHandler = function (k) {
-        return function () {
-            itemClickFlag = true;
-            k._srcElement.value = this.textContent || this.innerText;
-            k._srcElement.focus();
-            k.close();
-        };
-    };
-
-    var overItemHandler = function (k) {
-        return function () {
-            setActive.call(k, {
-                item: this,
-                fillSource: false
-            });
-        };
-    };
-
-    var outItemHandler = function (k) {
-        return function () {
-            k._menu.getElementsByClassName('kamil-active')[0].classList.remove('kamil-active');
-        };
-    };
-
-    var blurHandler = function (k) {
-        return function () {
-            if (k._opts.disabled || !itemClickFlag) {
-                return;
-            }
-
-            clearTimeout(k.searching);
-
-            k.close();
-        };
-    };
-
-    var isActive = function (menu, idx) {
-        var items = menu.getElementsByTagName('li'),
-            len = items.length;
-
-        if (typeof idx === 'string') {
-            idx = idx === 'first' ? 0 : len - 1;
-        }
-
-        if (!items[idx]) {
-            return null;
-        }
-
-        return items[idx].classList.contains('kamil-active');
-    };
-
-    var noActive = function (menu) {
-        return menu.getElementsByClassName('kamil-active').length === 0;
-    };
-
-    var setActive = function (o) {
-        // Search for active item
-        var activeArr = this._menu.getElementsByClassName('kamil-active');
-
-        if (activeArr.length !== 0) {
-            activeArr[0].classList.remove('kamil-active');
-        }
-
-        o.item.classList.add('kamil-active');
-
-        if (o.fillSource) {
-            this._srcElement.value = o.item.textContent || o.item.innerText;
-        }
-
-        var focus = new CustomEvent('kamilfocus', {
-            detail: {
-                item: this._data // TODO: pass item object (not array)
-            }
-        });
-        this._menu.dispatchEvent(focus);
-    };
-
-    var move = function (direction, event) {
-        if (!this.open) { // this._menu.style.display === 'none'
-            this.start(null, event);
-            return;
-        }
-
-        var items = this._menu.getElementsByTagName('li');
-
-        if (direction === 'previous' && isActive(this._menu, 'first') ||
-            direction === 'next' && isActive(this._menu, 'last')) {
-            this._srcElement.value = this.term;
-            this._activeIndex = null;
-
-            // Remove active list item
-            for (var i = 0, l = items.length; i < l; i++) {
-                if (items[i].classList.contains('kamil-active')) {
-                    items[i].classList.remove('kamil-active');
+                    self.start(null);
                 }
             }
-            return;
+        },
+
+        'itemClickFlag': true,
+
+        'mousedown': function () {
+            handlers.itemClickFlag = false;
+        },
+
+        'mouseup': function (k) {
+            return function () {
+                handlers.itemClickFlag = true;
+
+                k._srcElement.value = $.getItemValue(k, this); // this.textContent || this.innerText;
+                $.trigger(k._menu, 'kamilselect', {
+                    item: k._data[parseInt(this.getAttribute('data-position'))],
+                    inputElement: k._srcElement
+                });
+
+                k._srcElement.focus();
+                k.close();
+            };
+        },
+
+        'mouseover': function (k) {
+            return function () {
+                $.setActive.call(k, {
+                    item: this,
+                    fillSource: false
+                });
+            };
+        },
+
+        'mouseout': function (k) {
+            return function () {
+                k._menu.getElementsByClassName('kamil-active')[0].classList.remove('kamil-active');
+            };
+        },
+
+        'blur': function (k) {
+            return function () {
+                if (k._opts.disabled || !handlers.itemClickFlag) {
+                    return;
+                }
+
+                clearTimeout(k.searching);
+
+                k.close();
+            };
         }
 
-        if (noActive(this._menu) || this._activeIndex === null) {
-            // From bottom
-            if (direction === 'previous') {
-                this._activeIndex = items.length - 1;
-            }
-            // From top
-            else if (direction === 'next') {
-                this._activeIndex = 0;
-            }
-        }
-        else {
-            this._activeIndex = this._activeIndex + (direction === 'previous' ? -1 : 1);
-        }
-
-        setActive.call(this, {
-            item: items[this._activeIndex],
-            fillSource: true
-        });
     };
+
+    // Kamil!
 
     var Kamil = window.Kamil = function (element, options) {
 
         var self = this;
 
         // Initialise parameters
-        self._opts = _.extend(defaults, options);
+        self._opts = $.extend(defaults, options);
         self._activeIndex = null;
         self._data = null;
         self.open = false;
 
         // Initialise input element
         var srcElement = self._srcElement = typeof element === 'string' ? document.querySelector(element) : element;
-        srcElement.addEventListener('input', inputHandler.call(self), false);
-        srcElement.addEventListener('keyup', keyUpHandler(self), false);
-        srcElement.addEventListener('keydown', keyDownHandler, false);
-        srcElement.addEventListener('blur', blurHandler(self), false);
+        srcElement.addEventListener('input', handlers.input.call(self), false);
+        srcElement.addEventListener('keyup', handlers.keyup(self), false);
+        srcElement.addEventListener('keydown', handlers.keydown, false);
+        srcElement.addEventListener('blur', handlers.blur(self), false);
 
         // Initialise source
-        initSource.call(self);
+        init.source.call(self);
 
         // Initialise list
-        initList.call(self);
+        init.list.call(self);
     };
 
     Kamil.prototype._resizeMenu = function () {
         this._menu.style.width = this._srcElement.offsetWidth + 'px';
         this._menu.style.left = this._srcElement.offsetLeft + 'px';
         this._menu.style.top = (this._srcElement.offsetTop + this._srcElement.offsetHeight) + 'px';
-        //this._srcElement.style.zIndex = this._menu
     };
 
-    Kamil.prototype._renderItemData = function (ul, item) {
+    Kamil.prototype._renderItemData = function (ul, item, index) {
         var li = this.renderItem(ul, item);
-        li.addEventListener('mousedown', listItemMouseDownHandler, false);
-        li.addEventListener('mouseup', listItemMouseUpHandler(this), false);
-        li.addEventListener('mouseover', overItemHandler(this), false);
-        li.addEventListener('mouseout', outItemHandler(this), false);
+        li.setAttribute('data-position', index);
+        li.addEventListener('mousedown', handlers.mousedown, false);
+        li.addEventListener('mouseup', handlers.mouseup(this), false);
+        li.addEventListener('mouseover', handlers.mouseover(this), false);
+        li.addEventListener('mouseout', handlers.mouseout(this), false);
     };
 
     Kamil.prototype._renderMenu = function (items, callback) {
@@ -321,9 +350,15 @@
         while (ls.firstChild) {
             ls.removeChild(ls.firstChild);
         }
+        // ls.innerHTML = "";
 
         this._resizeMenu(); // Check this
         this.renderMenu(ls, items);
+
+        if (ls.children.length === 0) {
+            ls.style.display = 'none';
+            return;
+        }
 
         if (ls.style.display !== 'block') {
             ls.style.display = 'block';
@@ -344,7 +379,7 @@
 
         for (var i = 0, l = items.length; i < l; i++) {
             var item = items[i];
-            this._renderItemData(ul, item);
+            this._renderItemData(ul, item, i);
         }
 
     };
@@ -353,7 +388,7 @@
     Kamil.prototype.start = function (value) {
         var self = this;
 
-        value = value !== null ? value : this._srcElement.value;
+        value = value !== null ? value : self._srcElement.value;
         self.term = self._srcElement.value;
 
         if (self._opts.disabled) {
@@ -365,36 +400,34 @@
             return;
         }
 
+        if (value.length < self._opts.minChars) {
+            self.close();
+            return;
+        }
+
         // Trigger search event
         self._data = self.source.filter(function (e) {
-            return self._opts.filter(self._opts.valueProp === null ? (e.label || e.value || e) : e[self._opts.valueProp], value);
+            return self._opts.filter(self._opts.property === null ? (e.label || e.value || e) : e[self._opts.property], value);
         });
         self._data.sort(self._opts.sort);
 
-        // TODO: check this
-        /*if (data.length === 0) {
-            return;
-        }*/
-
-        var kamilResponse = new CustomEvent('kamilresponse', {
-            detail: {
-                content: self._data
-            }
+        $.trigger(this._menu, 'kamilresponse', {
+            content: self._data,
+            inputElement: self._srcElement
         });
-        this._menu.dispatchEvent(kamilResponse);
 
         self._renderMenu(self._data, function () {
             if (self._opts.autoFocus) {
                 var items = self._menu.getElementsByTagName('li');
 
-                setActive.call(self, {
+                $.setActive.call(self, {
                     item: items[0],
                     fillSource: false
                 });
             }
 
             self.open = true;
-            self._menu.dispatchEvent(events('kamilopen'));
+            $.trigger(self._menu, 'kamilopen');
         });
     };
 
@@ -404,10 +437,10 @@
 
         // Remove event listeners
         var srcElement = this._srcElement;
-        srcElement.removeEventListener('input', inputHandler.call(this), false);
-        srcElement.removeEventListener('keyup', keyUpHandler(this), false);
-        srcElement.removeEventListener('keydown', keyDownHandler, false);
-        srcElement.removeEventListener('blur', blurHandler(self), false);
+        srcElement.removeEventListener('input', handlers.input.call(this), false);
+        srcElement.removeEventListener('keyup', handlers.keyup(this), false);
+        srcElement.removeEventListener('keydown', handlers.keydown, false);
+        srcElement.removeEventListener('blur', handlers.blur(this), false);
     };
 
     Kamil.prototype.close = function () {
@@ -416,7 +449,7 @@
             this.open = false;
 
             // Trigger event
-            this._menu.dispatchEvent(events('kamilclose'));
+            $.trigger(this._menu, 'kamilclose');
         }
     };
 
@@ -449,9 +482,17 @@
         }
     };
 
-    // fn --> event, obj
     Kamil.prototype.on = function (eventName, fn) {
-        this._menu.addEventListener(eventName, fn, false);
+        var self = this;
+
+        self._menu.addEventListener(eventName, function (e) {
+            if (eventName === 'kamilresponse') {
+                self._data = fn(e);
+            }
+            else {
+                fn(e);
+            }
+        }, false);
     };
 
 })(window, document);
