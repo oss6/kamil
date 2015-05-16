@@ -2,11 +2,11 @@
 > An autocomplete library written in pure JS. <a href="http://oss6.github.io/kamil/">http://oss6.github.io/kamil/</a>
 
 ## Install
-### Download
-Download the zip file containing kamil.min.js and kamil.min.css from here.
+Download the zip file containing kamil.min.js and kamil.min.css from <a href="http://oss6.github.io/kamil/">here</a>.
 
-### Bower
-Using bower, run the following:
+or
+
+using bower, run the following:
 ```bash
 bower install --save kamil
 ```
