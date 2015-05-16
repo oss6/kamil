@@ -2,10 +2,11 @@
     display: none;
     position: absolute;
     list-style: none;
+    text-align: left;
     margin: 0;
     padding: 0;
     background-color: #fafafa;
-    z-index: -9999;
+    z-index: 9999;
     outline: none;
     color: #272727;
     -webkit-box-sizing: border-box;

@@ -8,15 +8,12 @@
 
 (function (window, document) {
 
-    // TODO:
-    // - kamilselect overrides default input element value
-
     var defaults = {
         source: null,
         appendTo: null,
         disabled: false,
         autoFocus: false,
-        minChars: 2,
+        minChars: 1,
         property: null,
         filter: function (text, input) {
             var re = new RegExp(input, 'i');
@@ -27,7 +24,7 @@
         }
     };
 
-    // Helpers
+    // --- Helpers ---
 
     var $ = {
         'extend': function (defaults, options) {
@@ -95,7 +92,7 @@
             o.item.classList.add('kamil-active');
 
             if (o.fillSource) {
-                this._srcElement.value = $.getItemValue(this, o.item); // o.item.textContent || o.item.innerText;
+                this._srcElement.value = $.getItemValue(this, o.item);
             }
 
             $.trigger(this._menu, 'kamilfocus', {
@@ -105,7 +102,7 @@
         },
 
         move: function (direction, event) {
-            if (!this.open) { // this._menu.style.display === 'none'
+            if (!this.open) {
                 this.start(null, event);
                 return;
             }
@@ -147,7 +144,7 @@
         }
     };
 
-    // Initialisation
+    // --- Initialisation ---
 
     var init = {
         'source': function () {
@@ -175,9 +172,9 @@
 
             this._menu = document.createElement('ul');
             this._menu.className = 'kamil-autocomplete';
+
             if (appendTo !== null) {
-                var parent = document.querySelector(appendTo);
-                parent.appendChild(this._menu);
+                document.querySelector(appendTo).appendChild(this._menu);
             }
             else {
                 this._srcElement.parentNode.insertBefore(this._menu, this._srcElement.nextSibling);
@@ -185,24 +182,22 @@
         }
     };
 
-    // Handlers
+    // --- Handlers ---
 
     var handlers = {
         'keyup': function (k) {
+
             return function (e) {
-                if (k._opts.disabled) {
-                    return;
-                }
+                if (k._opts.disabled) { return; }
 
-                var keyCode = e.keyCode;
+                switch (e.keyCode) {
+                    // UP
+                    case 38: $.move.call(k, 'previous', e); break;
 
-                switch (keyCode) {
-                    case 38:
-                        $.move.call(k, 'previous', e);
-                        break; // up
-                    case 40:
-                        $.move.call(k, 'next', e);
-                        break; // down
+                    // DOWN
+                    case 40: $.move.call(k, 'next', e); break; // down
+
+                    // ENTER
                     case 13:
                         var tmp = k._menu.getElementsByClassName('kamil-active');
 
@@ -211,7 +206,7 @@
                         }
 
                         var activeItem = tmp[0];
-                        k._srcElement.value = $.getItemValue(k, activeItem); // activeItem.textContent || activeItem.innerText;
+                        k._srcElement.value = $.getItemValue(k, activeItem);
 
                         // Trigger select event and override previous input value
                         $.trigger(k._menu, 'kamilselect', {
@@ -220,11 +215,13 @@
                         });
 
                         k.close();
-                        break; // enter
+                        break;
+
+                    // ESC
                     case 27:
                         k._srcElement.value = k.term;
                         k.close();
-                        break; // esc
+                        break;
                 }
             }
         },
@@ -240,9 +237,7 @@
             var self = this;
 
             return function () {
-                if (self._opts.disabled) {
-                    return;
-                }
+                if (self._opts.disabled) { return; }
 
                 // Only search if the value has changed
                 if (self.term !== self._srcElement.value || !self.open) {
@@ -262,7 +257,8 @@
             return function () {
                 handlers.itemClickFlag = true;
 
-                k._srcElement.value = $.getItemValue(k, this); // this.textContent || this.innerText;
+                k._srcElement.value = $.getItemValue(k, this);
+
                 $.trigger(k._menu, 'kamilselect', {
                     item: k._data[parseInt(this.getAttribute('data-position'))],
                     inputElement: k._srcElement
@@ -294,15 +290,13 @@
                     return;
                 }
 
-                clearTimeout(k.searching);
-
                 k.close();
             };
         }
 
     };
 
-    // Kamil!
+    // --- Kamil ---
 
     var Kamil = window.Kamil = function (element, options) {
 
@@ -329,9 +323,10 @@
     };
 
     Kamil.prototype._resizeMenu = function () {
-        this._menu.style.width = this._srcElement.offsetWidth + 'px';
-        this._menu.style.left = this._srcElement.offsetLeft + 'px';
-        this._menu.style.top = (this._srcElement.offsetTop + this._srcElement.offsetHeight) + 'px';
+        var style = this._menu.style;
+        style.width = this._srcElement.offsetWidth + 'px';
+        style.left = this._srcElement.offsetLeft + 'px';
+        style.top = (this._srcElement.offsetTop + this._srcElement.offsetHeight) + 'px';
     };
 
     Kamil.prototype._renderItemData = function (ul, item, index) {
@@ -367,6 +362,8 @@
         callback();
     };
 
+    // --- Methods ---
+
     Kamil.prototype.renderItem = function (ul, item) {
         var li = document.createElement('li');
         li.innerHTML = item;
@@ -384,32 +381,33 @@
 
     };
 
-    // triggers a search
     Kamil.prototype.start = function (value) {
         var self = this;
 
+        // Get value
         value = value !== null ? value : self._srcElement.value;
         self.term = self._srcElement.value;
 
-        if (self._opts.disabled) {
-            return;
-        }
+        // Disabled
+        if (self._opts.disabled) { return; }
 
+        // Empty value
         if (!value) {
             self.close();
             return;
         }
 
+        // Minimum characters check
         if (value.length < self._opts.minChars) {
             self.close();
             return;
         }
 
-        // Trigger search event
+        // Filter and sort data
         self._data = self.source.filter(function (e) {
             return self._opts.filter(self._opts.property === null ? (e.label || e.value || e) : e[self._opts.property], value);
-        });
-        self._data.sort(self._opts.sort);
+        })
+        .sort(self._opts.sort);
 
         $.trigger(this._menu, 'kamilresponse', {
             content: self._data,
@@ -431,6 +429,16 @@
         });
     };
 
+    Kamil.prototype.close = function () {
+        if (this.open) {
+            this._menu.style.display = 'none';
+            this.open = false;
+
+            // Trigger event
+            $.trigger(this._menu, 'kamilclose');
+        }
+    };
+
     Kamil.prototype.destroy = function () {
         // Remove menu
         this._menu.remove();
@@ -441,16 +449,6 @@
         srcElement.removeEventListener('keyup', handlers.keyup(this), false);
         srcElement.removeEventListener('keydown', handlers.keydown, false);
         srcElement.removeEventListener('blur', handlers.blur(this), false);
-    };
-
-    Kamil.prototype.close = function () {
-        if (this.open) {
-            this._menu.style.display = 'none';
-            this.open = false;
-
-            // Trigger event
-            $.trigger(this._menu, 'kamilclose');
-        }
     };
 
     Kamil.prototype.disable = function () {

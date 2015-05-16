@@ -2,78 +2,339 @@
 <html>
 <head lang="en">
     <meta charset="UTF-8">
-    <title>Kamil tests</title>
+    <title>Kamil | Simple and highly customisable autocomplete</title>
 
     <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/prism.css">
+    <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="kamil.css">
-    <script src="kamil.js"></script>
-    <script>
-        window.onload = function () {
-            /*var tags = [
-             "ActionScript",
-             "AppleScript",
-             "Asp",
-             "BASIC",
-             "C",
-             "C++",
-             "Clojure",
-             "COBOL",
-             "ColdFusion",
-             "Erlang",
-             "Fortran",
-             "Groovy",
-             "Haskell",
-             "Java",
-             "JavaScript",
-             "Lisp",
-             "Perl",
-             "PHP",
-             "Python",
-             "Ruby",
-             "Scala",
-             "Scheme"
-             ];*/
-            var tags = [
-                {
-                    label: "jQuery",
-                    desc: "the write less, do more, JavaScript library"
-                },
-                {
-                    label: "jQuery UI",
-                    desc: "the official user interface library for jQuery"
-                },
-                {
-                    label: "Sizzle JS",
-                    desc: "a pure-JavaScript CSS selector engine"
-                }
-            ];
-
-            var autoComplete = new Kamil('#tags', {
-                source: tags
-            });
-
-            autoComplete.renderItem = function (ul, item) {
-                var li = document.createElement('li');
-                li.innerHTML = "<a>" + item.label + "<br><small>" + item.desc + "</small></a>";
-                ul.appendChild(li);
-
-                return li;
-            };
-
-            autoComplete.on('kamilfocus', function (e) {
-                e.inputElement.value = e.item.label;
-            });
-
-            autoComplete.on('kamilselect', function (e) {
-                e.inputElement.value = e.item.label.toLowerCase();
-            });
-        };
-    </script>
 </head>
-<body>
-    <h1>Kamil tests</h1>
+<body class="language-markup">
+    <header>
+        <h1>Kamil autocomplete</h1>
+        <h2>
+            Simple, dependency-free and highly customisable autocomplete widget
+        </h2>
+    </header>
 
-    <input id="tags" placeholder="Search">
+    <div class="content">
+        <div class="demo">
+            <h1>Basic usage</h1>
+
+            <p>In the following examples, assume that the source list is:</p>
+<pre class="language-javascript">
+<code>
+var tags = ["ActionScript", "AppleScript", "Asp", "BASIC", "C", "C++", "Clojure", "COBOL", ... ]
+</code>
+</pre>
+
+            <p>The basic usage of the Kamil autocomplete is very simple to configure:</p>
+<pre class="language-markup"><code>&lt;input id=&quot;tags&quot; placeholder=&quot;search&quot;&gt;</code></pre>
+<pre class="language-javascript">
+<code>
+var autoComplete = new Kamil('#tags', {
+    source: tags
+});
+</code>
+</pre>
+
+            <div class="example">
+                <input id="tags1" placeholder="Search">
+            </div>
+
+            <p>The same result can be achieved by passing a selector instead of an array:</p>
+
+<pre class="language-markup"><code>
+&lt;input id=&quot;tags&quot; placeholder=&quot;search&quot;&gt;
+&lt;ul id=&quot;list&quot;&gt;
+    &lt;li&gt;ActionScript&lt;/li&gt;
+    &lt;li&gt;AppleScript&lt;/li&gt;
+    &lt;li&gt;Asp&lt;/li&gt;
+    &lt;li&gt;BASIC&lt;/li&gt;
+    &lt;li&gt;C&lt;/li&gt;
+    &lt;li&gt;C++&lt;/li&gt;
+    ...
+&lt;/ul&gt;
+</code></pre>
+<pre class="language-javascript">
+<code>
+    var autoComplete = new Kamil('#tags', { source: '#list' });
+</code>
+</pre>
+        </div>
+
+        <div class="demo">
+            <h1>Customisation</h1>
+
+            <p>
+                Kamil is highly customisable; you can pass and change various options through the Kamil object.
+                The table below lists all the available options:
+            </p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Option</th>
+                        <th>Description</th>
+                        <th>Type</th>
+                        <th>Default</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr>
+                        <td>source</td>
+                        <td>The list of suggestions given as an array or a selector</td>
+                        <td>Array | String</td>
+                        <td>null</td>
+                    </tr>
+
+                    <tr>
+                        <td>appendTo</td>
+                        <td>Where to append the menu</td>
+                        <td>String - selector</td>
+                        <td>Directly after the input element</td>
+                    </tr>
+
+                    <tr>
+                        <td>disabled</td>
+                        <td>Whether the autocomplete functionality is disabled</td>
+                        <td>Boolean</td>
+                        <td>false</td>
+                    </tr>
+
+                    <tr>
+                        <td>autoFocus</td>
+                        <td>Should the first element be selected once the menu is open?</td>
+                        <td>Boolean</td>
+                        <td>false</td>
+                    </tr>
+
+                    <tr>
+                        <td>minChars</td>
+                        <td>Minimum number of character to type before a search starts</td>
+                        <td>Number</td>
+                        <td>1</td>
+                    </tr>
+
+                    <tr>
+                        <td>property</td>
+                        <td>The property to choose for the suggestion</td>
+                        <td>String</td>
+                        <td>null - no nested structure</td>
+                    </tr>
+
+                    <tr>
+                        <td>filter</td>
+                        <td>
+                            The filter function to apply to the source list:
+<pre class="language-javascript">
+<code>
+filter: function (listItem, input) { ... }
+</code>
+</pre>
+                        </td>
+                        <td>Function</td>
+                        <td>Match anywhere, case insensitive</td>
+                    </tr>
+
+                    <tr>
+                        <td>sort</td>
+                        <td>
+                            Sort function to sort the items after they have been filtered
+                        </td>
+                        <td>Function</td>
+                        <td>Sort by ascending length</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p>Below you can find some examples of customisation.</p>
+
+            <h2>Auto focus</h2>
+<pre class="language-markup"><code>&lt;input id=&quot;tags&quot; placeholder=&quot;search&quot;&gt;</code></pre>
+<pre class="language-javascript">
+<code>
+var autoComplete = new Kamil('#tags', {
+    source: tags,
+    autoFocus: true
+});
+</code>
+</pre>
+
+            <div class="example">
+                <input id="tags2" placeholder="Search">
+            </div>
+
+            <h2>Minimum characters</h2>
+<pre class="language-markup"><code>&lt;input id=&quot;tags&quot; placeholder=&quot;search&quot;&gt;</code></pre>
+<pre class="language-javascript">
+<code>
+var autoComplete = new Kamil('#tags', {
+    source: tags,
+    minChars: 2
+});
+</code>
+</pre>
+            <p>Try typing 'co' or 'ja'</p>
+
+            <div class="example">
+                <input id="tags3" placeholder="Search">
+            </div>
+
+            <h2>Sort</h2>
+<pre class="language-markup"><code>&lt;input id=&quot;tags&quot; placeholder=&quot;search&quot;&gt;</code></pre>
+<pre class="language-javascript">
+<code>
+var autoComplete = new Kamil('#tags', {
+    source: tags,
+    sort: function (a, b) {
+        return a.localeCompare(b);
+    }
+});
+</code>
+</pre>
+            <div class="example">
+                <input id="tags4" placeholder="Search">
+            </div>
+
+        </div>
+
+        <div class="demo">
+            <h1>Extension points</h1>
+
+            <p>When extending the widget, you have the ability to override or add to the behavior of existing methods.</p>
+
+            <h2><code>renderItem(ul, item)</code></h2>
+            <p>
+                The renderItem extension point allows you to change the rendering of each list item.
+                The method must create an item, append it to the ul parameter and return it (the item):
+            </p>
+
+<pre class="language-markup"><code>&lt;input id=&quot;tags&quot; placeholder=&quot;search&quot;&gt;</code></pre>
+<pre class="language-javascript">
+<code>
+// Set up an array of objects
+var tags = [
+    {
+        label: "jQuery",
+        desc: "the write less, do more, JavaScript library"
+    },
+    {
+        label: "jQuery UI",
+        desc: "the official user interface library for jQuery"
+    },
+    {
+        label: "Sizzle JS",
+        desc: "a pure-JavaScript CSS selector engine"
+    }
+];
+
+var ac = new Kamil('#tags', {
+    source: tags
+});
+
+ac.renderItem = function (ul, item) {
+    // Render item and append to 'ul'
+    var li = document.createElement('li');
+    li.innerHTML = &quot;&lt;a&gt;&quot; + item.label + &quot;&lt;br&gt;&lt;small&gt;&quot; + item.desc + &quot;&lt;/small&gt;&lt;/a&gt;&quot;;
+    ul.appendChild(li);
+
+    return li; // Return the list item!
+};
+
+// More on events later
+ac.on('kamilfocus', function (e) {
+    e.inputElement.value = e.item.label;
+});
+
+ac.on('kamilselect', function (e) {
+    e.inputElement.value = e.item.label;
+});
+</code>
+</pre>
+
+            <div class="example">
+                <input id="tags5" placeholder="Search">
+            </div>
+
+            <h2><code>renderMenu(ul, items)</code></h2>
+            <p>
+                This method controls the rendering of the menu. It is passed an empty ul element and a list of
+                items. Creation of the individual &lt;li&gt; elements should be delegated to _renderItemData() like
+                in the following example:
+            </p>
+
+<pre class="language-markup"><code>&lt;input id=&quot;tags&quot; placeholder=&quot;search&quot;&gt;</code></pre>
+<pre class="language-javascript">
+<code>
+var ac = new Kamil('#tags6', {
+    source: tags
+});
+
+ac.renderMenu = function (ul, items) {
+    var i, l;
+
+    // Render items
+    for (i = 0, l = items.length; i < l; i++) {
+    this._renderItemData(ul, items[i], i);
+    }
+
+    // Striped menu
+    var listItems = ul.getElementsByTagName('li');
+    for (i = 0, l = listItems.length; i < l; i++) {
+        if (i % 2 === 0) {
+            listItems[i].classList.add('striped-even');
+        }
+    }
+}
+</code>
+</pre>
+
+            <div class="example">
+                <input id="tags6" placeholder="Search">
+            </div>
+
+        </div>
+
+        <div class="demo">
+            <h1>Methods</h1>
+            <p>
+                The following methods allow you to programmatically control the widget.
+            </p>
+
+            <h2><code>close()</code></h2>
+            <p>Closes the autocomplete menu.</p>
+
+            <h2><code>destroy()</code></h2>
+            <p>Removes the menu and the events attached to the input element.</p>
+
+            <h2><code>disable()</code></h2>
+            <p>Disables the autocomplete.</p>
+
+            <h2><code>enable()</code></h2>
+            <p>Enabls the autocomplete.</p>
+
+            <h2><code>option()</code></h2>
+            <p>Returns the options object.</p>
+
+            <h2><code>option(name)</code></h2>
+            <p>Return the value of the given option name.</p>
+
+            <h2><code>option(name, value)</code></h2>
+            <p>Sets the option to the given value.</p>
+
+            <h2><code>start()</code></h2>
+            <p>Starts a suggestions' search.</p>
+        </div>
+
+        <div class="demo">
+            <h1>Events</h1>
+
+        </div>
+    </div>
+
+    <script src="js/prism.js"></script>
+    <script src="kamil.js"></script>
+    <script src="js/examples.js"></script>
 </body>
 </html>
