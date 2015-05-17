@@ -20,7 +20,7 @@
             return re.test(text);
         },
         sort: function (a, b) {
-            return a.length - b.length
+            return a.length - b.length; // FIX --> check for property
         }
     };
 
@@ -157,11 +157,11 @@
             // String
             else {
                 var list = document.querySelector(source),
-                    childNodes = list.childNodes;
+                    children = list.children;
 
                 this.source = [];
-                for (var i = 0, l = childNodes.length; i < l; i++) {
-                    var item = childNodes[i];
+                for (var i = 0, l = children.length; i < l; i++) {
+                    var item = children[i];
                     this.source.push(item.textContent);
                 }
             }
@@ -366,7 +366,7 @@
 
     Kamil.prototype.renderItem = function (ul, item) {
         var li = document.createElement('li');
-        li.innerHTML = item;
+        li.innerHTML = this._opts.property === null ? (item.label || item.value || item) : item[this._opts.property];
         ul.appendChild(li);
 
         return li;
