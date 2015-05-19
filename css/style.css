@@ -6,8 +6,39 @@
 
 body {
     font-family: 'Roboto', sans-serif;
-    background-color: #eee;
+    background-color: #FCFCFC;
     line-height: 1.5;
+}
+
+.btn-large {
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+    cursor: pointer;
+    height: 54px;
+    line-height: 56px;
+    text-decoration: none;
+    color: #FFF;
+    background-color: #26a69a;
+    text-align: center;
+    letter-spacing: .5px;
+    border: none;
+    border-radius: 2px;
+    outline: 0;
+    padding: 0 2rem;
+    text-transform: uppercase;
+    -webkit-transition: all .3s ease-out;
+    -moz-transition: all .3s ease-out;
+    -o-transition: all .3s ease-out;
+    -ms-transition: all .3s ease-out;
+    transition: all .3s ease-out;
+    -webkit-box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
+    -moz-box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
+    box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
+}
+
+.btn-large:hover {
+    background-color: #4db6ac;
 }
 
 input {
@@ -21,22 +52,71 @@ input {
 }
 
 p {
-    font-size: 1.2em;
+    font-size: 1.25rem;
+    font-weight: 300;
+    color: rgba(0, 0, 0, 0.71);
 }
 
 header {
     text-align: center;
     padding: 35px 12px;
+    margin: 50px 15% 50px 15%;
 }
 
 header h1 {
     font-size: 3.5em;
     font-weight: 100;
+    color: #01579b;
 }
 
 header h2 {
     font-weight: 100;
     font-style: italic;
+    color: rgba(0, 0, 0, 0.63);
+}
+
+nav {
+    display: block;
+    height: 64px;
+    line-height: 64px;
+    margin-top: 25px;
+    color: #fff;
+    background-color: #0288d1;
+    width: 100%;
+    box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
+}
+
+nav .nav-wrapper {
+    position: relative;
+    height: 100%;
+}
+
+nav ul {
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+}
+
+nav ul li {
+    -webkit-transition: background-color .3s;
+    -moz-transition: background-color .3s;
+    -o-transition: background-color .3s;
+    -ms-transition: background-color .3s;
+    transition: background-color .3s;
+    float: left;
+    padding: 0;
+}
+
+nav ul li:hover {
+    background-color: #01579b;
+}
+
+nav ul a {
+    font-size: 1rem;
+    color: #fff;
+    display: block;
+    padding: 0 15px;
+    text-decoration: none;
 }
 
 .content {
@@ -49,6 +129,10 @@ header h2 {
 
 .demo h1 {
     margin-bottom: 23px;
+    font-size: 2.3em;
+    padding: 0 10px;
+    border-left: 5px solid #303f9f;
+    color: #1a237e;
 }
 
 .demo p {
@@ -57,12 +141,6 @@ header h2 {
 
 .content .demo:last-child {
     margin-bottom: 0;
-}
-
-.demo h1 {
-    font-size: 2.3em;
-    padding: 0 10px;
-    border-left: 5px solid #000;
 }
 
 .example {

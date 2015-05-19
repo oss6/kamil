@@ -15,12 +15,17 @@
         autoFocus: false,
         minChars: 1,
         property: null,
+        exclude: 'kamil-autocomplete-category',
         filter: function (text, input) {
             var re = new RegExp(input, 'i');
             return re.test(text);
         },
         sort: function (a, b) {
-            return a.length - b.length; // FIX --> check for property
+            var prop = this._opts.property,
+                v1 = prop === null ? (a.label || a.value || a) : a[prop],
+                v2 = prop === null ? (b.label || b.value || b) : b[prop];
+
+            return v1.length - v2.length;
         }
     };
 
@@ -47,7 +52,9 @@
             var item = kamil._data[parseInt(listItem.getAttribute('data-position'))],
                 prop = kamil._opts.property;
 
-            return prop === null ? (item['label'] || item['value'] || item) : item[prop];
+            if (typeof item !== 'undefined') {
+                return prop === null ? (item['label'] || item['value'] || item) : item[prop];
+            }
         },
 
         'trigger': function (target, type, properties) {
@@ -82,6 +89,10 @@
         },
 
         'setActive': function (o) {
+            if (o.item.classList.contains(this._opts.exclude)) {
+                return;
+            }
+
             // Search for active item
             var activeArr = this._menu.getElementsByClassName('kamil-active');
 
@@ -101,16 +112,18 @@
             });
         },
 
-        move: function (direction, event) {
+        move: function (direction) {
             if (!this.open) {
-                this.start(null, event);
+                this.start(null);
                 return;
             }
 
             var items = this._menu.getElementsByTagName('li');
 
+            // If out of bounds
             if (direction === 'previous' && $.isActive(this._menu, 'first') ||
-                direction === 'next' && $.isActive(this._menu, 'last')) {
+                direction === 'next' && $.isActive(this._menu, 'last') ||
+                direction === 'previous' && this._activeIndex === 1 && items[0].classList.contains(this._opts.exclude)) {
                 this._srcElement.value = this.term;
                 this._activeIndex = null;
 
@@ -134,6 +147,11 @@
                 }
             }
             else {
+                this._activeIndex = this._activeIndex + (direction === 'previous' ? -1 : 1);
+            }
+
+            if (items[this._activeIndex] &&
+                items[this._activeIndex].classList.contains(this._opts.exclude)) {
                 this._activeIndex = this._activeIndex + (direction === 'previous' ? -1 : 1);
             }
 
@@ -280,7 +298,11 @@
 
         'mouseout': function (k) {
             return function () {
-                k._menu.getElementsByClassName('kamil-active')[0].classList.remove('kamil-active');
+                var active = k._menu.getElementsByClassName('kamil-active')[0];
+
+                if (active) {
+                    active.classList.remove('kamil-active');
+                }
             };
         },
 
@@ -331,11 +353,14 @@
 
     Kamil.prototype._renderItemData = function (ul, item, index) {
         var li = this.renderItem(ul, item);
+
         li.setAttribute('data-position', index);
         li.addEventListener('mousedown', handlers.mousedown, false);
         li.addEventListener('mouseup', handlers.mouseup(this), false);
         li.addEventListener('mouseover', handlers.mouseover(this), false);
         li.addEventListener('mouseout', handlers.mouseout(this), false);
+
+        return li;
     };
 
     Kamil.prototype._renderMenu = function (items, callback) {
@@ -407,7 +432,7 @@
         self._data = self.source.filter(function (e) {
             return self._opts.filter(self._opts.property === null ? (e.label || e.value || e) : e[self._opts.property], value);
         })
-        .sort(self._opts.sort);
+        .sort(function (a, b) { return self._opts.sort.call(self, a, b); });
 
         $.trigger(this._menu, 'kamilresponse', {
             content: self._data,

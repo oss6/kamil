@@ -8,6 +8,16 @@
     <link rel="stylesheet" href="css/prism.css">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="kamil.css">
+    <style>
+        .kamil-autocomplete li.kamil-autocomplete-category {
+            font-weight: bold;
+            padding: .2em .4em;
+            margin: .8em 0 .2em;
+            line-height: 1.5;
+            background-color: #dadada;
+            cursor: default;
+        }
+    </style>
 </head>
 <body class="language-markup">
     <header>
@@ -15,11 +25,23 @@
         <h2>
             Simple, dependency-free and highly customisable autocomplete widget
         </h2>
+        <nav>
+            <div class="nav-wrapper">
+                <ul class="left">
+                    <li><a href="#basic-usage">Basic usage</a></li>
+                    <li><a href="#customisation">Customisation</a></li>
+                    <li><a href="#extension-points">Extension points</a></li>
+                    <li><a href="#methods">Methods</a></li>
+                    <li><a href="#events">Events</a></li>
+                    <li><a href="#download-contribute">Download and contribute</a></li>
+                </ul>
+            </div>
+        </nav>
     </header>
 
     <div class="content">
         <div class="demo">
-            <h1>Basic usage</h1>
+            <h1 id="basic-usage">Basic usage</h1>
 
             <p>In the following examples, assume that the source list is:</p>
 <pre class="language-javascript">
@@ -64,7 +86,7 @@ var autoComplete = new Kamil('#tags', {
         </div>
 
         <div class="demo">
-            <h1>Customisation</h1>
+            <h1 id="customisation">Customisation</h1>
 
             <p>
                 Kamil is highly customisable; you can pass and change various options through the Kamil object.
@@ -121,6 +143,13 @@ var autoComplete = new Kamil('#tags', {
                         <td>The property to choose for the suggestion</td>
                         <td>String</td>
                         <td>null - no nested structure</td>
+                    </tr>
+
+                    <tr>
+                        <td>exclude</td>
+                        <td>Class name given to the list items to exclude from being part of the data</td>
+                        <td>String</td>
+                        <td>'kamil-autocomplete-category'</td>
                     </tr>
 
                     <tr>
@@ -200,9 +229,12 @@ var autoComplete = new Kamil('#tags', {
         </div>
 
         <div class="demo">
-            <h1>Extension points</h1>
+            <h1 id="extension-points">Extension points</h1>
 
-            <p>When extending the widget, you have the ability to override or add to the behavior of existing methods.</p>
+            <p>
+                When extending the widget, you have the ability to override or add to the behavior of existing methods.
+                Extension points gives you more freedom than options.
+            </p>
 
             <h2><code>renderItem(ul, item)</code></h2>
             <p>
@@ -294,10 +326,62 @@ ac.renderMenu = function (ul, items) {
                 <input id="tags6" placeholder="Search">
             </div>
 
+            <p>Categories (example from <a href="https://jqueryui.com/autocomplete/#categories">jQuery UI Autocomplete</a>):</p>
+
+<pre class="language-markup"><code>&lt;input id=&quot;tags&quot; placeholder=&quot;search&quot;&gt;</code></pre>
+<pre class="language-javascript">
+<code>
+var data = [
+        { label: "anders", category: "" },
+        { label: "andreas", category: "" },
+        { label: "antal", category: "" },
+        { label: "annhhx10", category: "Products" },
+        { label: "annk K12", category: "Products" },
+        { label: "annttop C13", category: "Products" },
+        { label: "anders andersson", category: "People" },
+        { label: "andreas andersson", category: "People" },
+        { label: "andreas johnson", category: "People" }
+    ],
+
+    ac = new Kamil('#tags7', { source: data });
+
+// Customise menu rendering
+ac.renderMenu = function (ul, items) {
+    var self = this,
+    currentCategory = "";
+
+    // Loop through items
+    items.forEach(function (item, index) {
+        var li;
+
+        // Create category
+        if (item.category !== currentCategory) {
+            var catLi = document.createElement('li');
+            catLi.className = 'kamil-autocomplete-category';
+            catLi.innerHTML = item.category;
+
+            ul.appendChild(catLi);
+            currentCategory = item.category;
+        }
+
+        // Create item
+        li = self._renderItemData(ul, item, index);
+        if (item.category) {
+            li.setAttribute('aria-label', item.category + ' : ' + item.label);
+        }
+    });
+};
+</code>
+</pre>
+
+            <div class="example">
+                <input id="tags7" placeholder="Search">
+            </div>
+
         </div>
 
         <div class="demo">
-            <h1>Methods</h1>
+            <h1 id="methods">Methods</h1>
             <p>
                 The following methods allow you to programmatically control the widget.
             </p>
@@ -323,13 +407,48 @@ ac.renderMenu = function (ul, items) {
             <h2><code>option(name, value)</code></h2>
             <p>Sets the option to the given value.</p>
 
-            <h2><code>start()</code></h2>
-            <p>Starts a suggestions' search.</p>
+            <h2><code>start([value])</code></h2>
+            <p>Starts a suggestions' search. If value is not specified then it takes the input's text.</p>
         </div>
 
         <div class="demo">
-            <h1>Events</h1>
+            <h1 id="events">Events</h1>
 
+            You can add an event listener using the <code>on</code> method:
+<pre class="language-javascript">
+<code>
+autoComplete.on('kamilopen', function (e) {
+    ...
+});
+</code>
+</pre>
+
+            <h2><code>kamilclose</code></h2>
+            <p>Triggered when the menu is closed (hidden).</p>
+
+            <h2><code>kamilfocus</code></h2>
+            <p>
+                Triggered when focus is moved to an item. The default behaviour is to
+                replace the input's field with the 'property' option (if it's not
+                specified then it will fallback on 'label' then 'value' then the
+                item's text itself).
+            </p>
+
+            <h2><code>kamilopen</code></h2>
+            <p>
+                Fired when the menu is opened or updated.
+            </p>
+
+            <h2><code>kamilselect</code></h2>
+            <p>
+                Triggered when an item is selected from the menu.
+            </p>
+        </div>
+
+        <div class="demo">
+            <h1 id="download-contribute">Download and contribute</h1>
+            <p>Contributions are very welcome! <a href="https://github.com/oss6/kamil/issues/new">Suggest a feature? Spot a bug?</a></p>
+            <a href="kamil.zip" class="btn-large" download>Download</a>
         </div>
     </div>
 

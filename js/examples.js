@@ -91,6 +91,45 @@ var examples = (function () {
             }
         },
 
+        example7 = function () {
+            var data = [
+                    { label: "anders", category: "" },
+                    { label: "andreas", category: "" },
+                    { label: "antal", category: "" },
+                    { label: "annhhx10", category: "Products" },
+                    { label: "annk K12", category: "Products" },
+                    { label: "annttop C13", category: "Products" },
+                    { label: "anders andersson", category: "People" },
+                    { label: "andreas andersson", category: "People" },
+                    { label: "andreas johnson", category: "People" }
+                ],
+                ac = new Kamil('#tags7', {
+                    source: data
+                });
+
+            ac.renderMenu = function (ul, items) {
+                var self = this,
+                    currentCategory = "";
+
+                items.forEach(function (item, index) {
+                    var li;
+
+                    if (item.category !== currentCategory) {
+                        var catLi = document.createElement('li');
+                        catLi.className = 'kamil-autocomplete-category';
+                        catLi.innerHTML = item.category;
+
+                        ul.appendChild(catLi);
+                        currentCategory = item.category;
+                    }
+                    li = self._renderItemData(ul, item, index);
+                    if (item.category) {
+                        li.setAttribute('aria-label', item.category + ' : ' + item.label);
+                    }
+                });
+            };
+        },
+
         init = function () {
 
             example(1, { source: tags });
@@ -104,6 +143,7 @@ var examples = (function () {
             });
             example5();
             example6();
+            example7();
 
         };
 
