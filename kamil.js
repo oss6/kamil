@@ -1,5 +1,5 @@
 /*!
- * Kamil v0.0.1
+ * Kamil v0.1.1
  * Autocomplete library - pure JS
  * http://oss6.github.io/kamil
  * MIT License
@@ -17,7 +17,7 @@
         property: null,
         exclude: 'kamil-autocomplete-category',
         filter: function (text, input) {
-            var re = new RegExp(input, 'i');
+            var re = new RegExp($.escapeRegex(input), 'i');
             return re.test(text);
         },
         sort: function (a, b) {
@@ -32,7 +32,7 @@
     // --- Helpers ---
 
     var $ = {
-        'extend': function (defaults, options) {
+        extend: function (defaults, options) {
             var extended = {};
             var prop;
             for (prop in defaults) {
@@ -48,7 +48,11 @@
             return extended;
         },
 
-        'getItemValue': function (kamil, listItem) {
+        escapeRegex: function (s) {
+            return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+        },
+
+        getItemValue: function (kamil, listItem) {
             var item = kamil._data[parseInt(listItem.getAttribute('data-position'))],
                 prop = kamil._opts.property;
 
@@ -57,7 +61,7 @@
             }
         },
 
-        'trigger': function (target, type, properties) {
+        trigger: function (target, type, properties) {
             var evt = document.createEvent("HTMLEvents");
 
             evt.initEvent(type, true, true );
@@ -69,7 +73,7 @@
             target.dispatchEvent(evt);
         },
 
-        'isActive': function (menu, idx) {
+        isActive: function (menu, idx) {
             var items = menu.getElementsByTagName('li'),
                 len = items.length;
 
@@ -84,11 +88,11 @@
             return items[idx].classList.contains('kamil-active');
         },
 
-        'noActive': function (menu) {
+        noActive: function (menu) {
             return menu.getElementsByClassName('kamil-active').length === 0;
         },
 
-        'setActive': function (o) {
+        setActive: function (o) {
             if (o.item.classList.contains(this._opts.exclude)) {
                 return;
             }
