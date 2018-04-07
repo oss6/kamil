@@ -1,12 +1,12 @@
 /*!
- * Kamil v0.1.1
- * Autocomplete library - pure JS
+ * Kamil v0.2.0
+ * Simple and extensible autocomplete library
  * http://oss6.github.io/kamil
  * MIT License
  * by Ossama Edbali
  */
 
-(function (window, document) {
+;(function (window, document) {
 
     var defaults = {
         source: null,
@@ -14,6 +14,7 @@
         disabled: false,
         autoFocus: false,
         minChars: 1,
+        noResultsMessage: null,
         property: null,
         exclude: 'kamil-autocomplete-category',
         filter: function (text, input) {
@@ -122,6 +123,11 @@
                 return;
             }
 
+            // If no results
+            if (this._data.length === 1 && this._data[0] === this._opts.noResultsMessage) {
+                return;
+            }
+
             var items = this._menu.getElementsByTagName('li');
 
             // If out of bounds
@@ -149,8 +155,7 @@
                 else if (direction === 'next') {
                     this._activeIndex = 0;
                 }
-            }
-            else {
+            } else {
                 this._activeIndex = this._activeIndex + (direction === 'previous' ? -1 : 1);
             }
 
@@ -217,7 +222,7 @@
                     case 38: $.move.call(k, 'previous', e); break;
 
                     // DOWN
-                    case 40: $.move.call(k, 'next', e); break; // down
+                    case 40: $.move.call(k, 'next', e); break;
 
                     // ENTER
                     case 13:
@@ -374,9 +379,8 @@
         while (ls.firstChild) {
             ls.removeChild(ls.firstChild);
         }
-        // ls.innerHTML = "";
 
-        this._resizeMenu(); // Check this
+        this._resizeMenu();
         this.renderMenu(ls, items);
 
         if (ls.children.length === 0) {
@@ -437,6 +441,10 @@
             return self._opts.filter(self._opts.property === null ? (e.label || e.value || e) : e[self._opts.property], value);
         })
         .sort(function (a, b) { return self._opts.sort.call(self, a, b); });
+
+        if (self._data.length === 0 && self._opts.noResultsMessage !== null) {
+            self._data = [self._opts.noResultsMessage];
+        }
 
         $.trigger(this._menu, 'kamilresponse', {
             content: self._data,

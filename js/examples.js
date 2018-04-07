@@ -132,7 +132,7 @@ var examples = (function () {
 
         init = function () {
 
-            example(1, { source: tags });
+            example(1, { source: tags, noResultsMessage: 'No results found.' });
             example(2, { source: tags, autoFocus: true });
             example(3, { source: tags, minChars: 2 });
             example(4, {

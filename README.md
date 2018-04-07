@@ -6,9 +6,9 @@ Download the zip file containing kamil.min.js and kamil.min.css from <a href="ht
 
 or
 
-using bower, run the following:
+using npm, run the following:
 ```bash
-bower install --save kamil
+npm install --save kamil
 ```
 
 
@@ -20,7 +20,7 @@ The basic usage of the Kamil autocomplete is very simple to configure:
 ```
 
 ```javascript
-var tags = ["ActionScript", "AppleScript", "Asp", "BASIC", "C", "C++", "Clojure", "COBOL", ... ]
+var tags = ['ActionScript', 'AppleScript', 'Asp', 'BASIC', 'C', 'C++', 'Clojure', 'COBOL']
 var autoComplete = new Kamil('#tags', { source: tags });
 ```
 

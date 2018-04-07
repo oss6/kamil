@@ -1,0 +1,30 @@
+{
+  "name": "kamil",
+  "version": "0.2.0",
+  "description": "Dependency-free autocomplete library/widget",
+  "main": "kamil.js",
+  "directories": {
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oss6/kamil.git"
+  },
+  "keywords": [
+    "autocomplete",
+    "suggestion",
+    "suggestions",
+    "widget",
+    "auto-suggest",
+    "autosuggest",
+    "auto-complete",
+    "auto",
+    "complete"
+  ],
+  "author": "Ossama Edbali",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/oss6/kamil/issues"
+  },
+  "homepage": "http://oss6.github.io/kamil"
+}

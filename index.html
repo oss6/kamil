@@ -23,7 +23,7 @@
     <header>
         <h1>Kamil autocomplete</h1>
         <h2>
-            Simple, dependency-free and highly customisable autocomplete widget
+            Dependency-free and highly customisable autocomplete widget
         </h2>
         <nav>
             <div class="nav-wrapper">
@@ -44,14 +44,24 @@
         <div class="demo">
             <h1 id="basic-usage">Basic usage</h1>
 
-            <p>In the following examples, assume that the source list is:</p>
-<pre class="language-javascript">
+            <p>Install the library through NPM:</p>
+
+<pre class="language-shell">
 <code>
-var tags = ["ActionScript", "AppleScript", "Asp", "BASIC", "C", "C++", "Clojure", "COBOL", ... ]
+$ npm install kamil --save
 </code>
 </pre>
 
-            <p>The basic usage of Kamil autocomplete is very simple to configure:</p>
+            <p>or download the <a href="https://github.com/oss6/kamil/archive/v0.2.0.zip">zip</a> file.</p>
+
+            <p>In the following examples, assume that the source list is:</p>
+<pre class="language-javascript">
+<code>
+var tags = ['ActionScript', 'AppleScript', 'Asp', 'BASIC', 'C', 'C++', 'Clojure', 'COBOL', ... ]
+</code>
+</pre>
+
+            <p>The basic usage of Kamil autocomplete is:</p>
 <pre class="language-markup"><code>&lt;input id=&quot;tags&quot; placeholder=&quot;search&quot;&gt;</code></pre>
 <pre class="language-javascript">
 <code>
@@ -81,7 +91,7 @@ var autoComplete = new Kamil('#tags', {
 </code></pre>
 <pre class="language-javascript">
 <code>
-    var autoComplete = new Kamil('#tags', { source: '#list' });
+var autoComplete = new Kamil('#tags', { source: '#list' });
 </code>
 </pre>
         </div>
@@ -137,6 +147,13 @@ var autoComplete = new Kamil('#tags', {
                         <td>Minimum number of character to type before a search starts</td>
                         <td>Number</td>
                         <td>1</td>
+                    </tr>
+
+                    <tr>
+                        <td>noResultsMessage</td>
+                        <td>Message to display when there are no matches</td>
+                        <td>String</td>
+                        <td>null</td>
                     </tr>
 
                     <tr>
@@ -449,7 +466,7 @@ autoComplete.on('kamilopen', function (e) {
         <div class="demo">
             <h1 id="download-contribute">Download and contribute</h1>
             <p>Contributions are very welcome! <a href="https://github.com/oss6/kamil/issues/new">Suggest a feature? Spot a bug?</a></p>
-            <a href="https://github.com/oss6/kamil/archive/v0.1.1.zip" class="btn-large" download>Download</a>
+            <a href="https://github.com/oss6/kamil/archive/v0.2.0.zip" class="btn-large" download>Download</a>
         </div>
     </div>
 
