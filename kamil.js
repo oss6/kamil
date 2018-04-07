@@ -1,5 +1,5 @@
 /*!
- * Kamil v0.2.0
+ * Kamil v0.2.1
  * Simple and extensible autocomplete library
  * http://oss6.github.io/kamil
  * MIT License
